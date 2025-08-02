@@ -1,0 +1,6 @@
+{
+    "logPath": "log.log",
+    "lookupMode": "AUTO",
+    "maxHops": 30,
+    "themeMode": "AUTO"
+}

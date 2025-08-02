@@ -1,3 +1,3 @@
-/home/alex/dev/PacketTracer/backend/build/CMakeFiles/app.dir
-/home/alex/dev/PacketTracer/backend/build/CMakeFiles/edit_cache.dir
-/home/alex/dev/PacketTracer/backend/build/CMakeFiles/rebuild_cache.dir
+/home/alex/dev/Hovia/backend/build/CMakeFiles/app.dir
+/home/alex/dev/Hovia/backend/build/CMakeFiles/edit_cache.dir
+/home/alex/dev/Hovia/backend/build/CMakeFiles/rebuild_cache.dir

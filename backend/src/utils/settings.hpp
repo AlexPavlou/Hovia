@@ -33,12 +33,21 @@ public:
 
     uint8_t getTimeout() const;
     void setTimeout(uint8_t newTimeout);
+
     std::string getLogPath() const;
-    std::string getInterfaceOption() const;
-    std::string getFilter() const;
     void setLogPath(const std::string& logPath);
+
+    std::string getInterfaceOption() const;
     void setInterfaceOption(const std::string& interface);
+    
+    std::string getFilter() const;
     void setFilter(const std::string& newFilter);
+
+    ThemeMode getThemeMode() const;
+    void setThemeMode(ThemeMode mode);
+    
+    void setLookupMode(LookupMode mode);
+    LookupMode getLookupMode() const;
 
     int getMaxHops() const;
     void setMaxHops(const int val);

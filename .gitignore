@@ -1,17 +1,16 @@
 # Node modules
-frontend/node_modules/
+frontend/hovia-ui/node_modules
 
 # Build output
-frontend/build/
+backend/hovia-ui/build/
 
 # Logs
-frontend/npm-debug.log*
-frontend/yarn-debug.log*
-frontend/yarn-error.log*
+frontend/hovia-ui/npm-debug.log*
+frontend/hovia-ui/yarn-debug.log*
+frontend/hovia-ui/yarn-error.log*
 
 # OS files
 .DS_Store
 Thumbs.db
 
-# Env files (if any)
-frontend/.env
+.env

@@ -89,11 +89,9 @@ std::vector<hopInfo> traceroute(const char *targetIP, int MAX_HOPS, uint32_t TIM
                 if (recv_addr.sin_addr.s_addr == dest_addr.sin_addr.s_addr) {
                     break;
                 }
+                hops.push_back(hop);
             }
-        } else {
-            hop.latency=-1;
         }
-        hops.push_back(hop);
     }
     close(sockfd);
     return hops;

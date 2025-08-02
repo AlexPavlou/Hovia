@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(app)
+project(hovia)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -12,7 +12,8 @@ find_library(PCAP_LIB pcap REQUIRED)
 
 include_directories(include)
 
-add_executable(app
+add_executable(hovia
+    src/main.cpp
     src/IpTracker.cpp
     src/capture/capture.cpp
     src/lookup/lookup.cpp
@@ -23,13 +24,13 @@ add_executable(app
     src/utils/lookup_utils/traceroute.cpp
 )
 
-target_include_directories(app PRIVATE
+target_include_directories(hovia PRIVATE
     /usr/local/include
     ${CMAKE_SOURCE_DIR}/include
     ${CURL_INCLUDE_DIRS}
 )
 
-target_link_libraries(app PRIVATE
+target_link_libraries(hovia PRIVATE
     ${TINS_LIB}
     ${PCAP_LIB}
     ${CURL_LIBRARIES}

@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/alex/dev/PacketTracer/backend
+CMAKE_SOURCE_DIR = /home/alex/dev/Hovia/backend
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/alex/dev/PacketTracer/backend/build
+CMAKE_BINARY_DIR = /home/alex/dev/Hovia/backend/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/alex/dev/PacketTracer/backend/build/CMakeFiles /home/alex/dev/PacketTracer/backend/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/alex/dev/Hovia/backend/build/CMakeFiles /home/alex/dev/Hovia/backend/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/alex/dev/PacketTracer/backend/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/alex/dev/Hovia/backend/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -200,6 +200,30 @@ src/lookup/lookup.s: src/lookup/lookup.cpp.s
 src/lookup/lookup.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/lookup/lookup.cpp.s
 .PHONY : src/lookup/lookup.cpp.s
+
+src/main.o: src/main.cpp.o
+.PHONY : src/main.o
+
+# target to build an object file
+src/main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/main.cpp.o
+.PHONY : src/main.cpp.o
+
+src/main.i: src/main.cpp.i
+.PHONY : src/main.i
+
+# target to preprocess a source file
+src/main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/main.cpp.i
+.PHONY : src/main.cpp.i
+
+src/main.s: src/main.cpp.s
+.PHONY : src/main.s
+
+# target to generate assembly for a file
+src/main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/main.cpp.s
+.PHONY : src/main.cpp.s
 
 src/platform-dependent/utils.o: src/platform-dependent/utils.cpp.o
 .PHONY : src/platform-dependent/utils.o
@@ -339,6 +363,9 @@ help:
 	@echo "... src/lookup/lookup.o"
 	@echo "... src/lookup/lookup.i"
 	@echo "... src/lookup/lookup.s"
+	@echo "... src/main.o"
+	@echo "... src/main.i"
+	@echo "... src/main.s"
 	@echo "... src/platform-dependent/utils.o"
 	@echo "... src/platform-dependent/utils.i"
 	@echo "... src/platform-dependent/utils.s"

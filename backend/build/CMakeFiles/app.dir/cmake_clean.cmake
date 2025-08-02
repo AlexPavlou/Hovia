@@ -5,6 +5,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/app.dir/src/capture/capture.cpp.o.d"
   "CMakeFiles/app.dir/src/lookup/lookup.cpp.o"
   "CMakeFiles/app.dir/src/lookup/lookup.cpp.o.d"
+  "CMakeFiles/app.dir/src/main.cpp.o"
+  "CMakeFiles/app.dir/src/main.cpp.o.d"
   "CMakeFiles/app.dir/src/platform-dependent/utils.cpp.o"
   "CMakeFiles/app.dir/src/platform-dependent/utils.cpp.o.d"
   "CMakeFiles/app.dir/src/ui/ui.cpp.o"

@@ -53,6 +53,22 @@ void Settings::setMaxHops(const int val) {
     maxHops.store(val);
 }
 
+ThemeMode Settings::getThemeMode() const {
+    return themeMode.load();
+}
+
+void Settings::setLookupMode(LookupMode mode) {
+    lookupMode.store(mode);
+}
+
+LookupMode Settings::getLookupMode() const {
+    return lookupMode.load();
+}
+
+void Settings::setThemeMode(ThemeMode mode) {
+    themeMode.store(mode);
+}
+
 std::shared_ptr<Settings> Settings::loadFromFile(const std::string& path) {
     auto s = std::make_shared<Settings>();
     std::ifstream in(path);
@@ -97,7 +113,7 @@ void Settings::saveToFile(const std::string& path) const {
     }
 
     switch (themeMode.load()) {
-        case ThemeMode::DARK: j["themeMode"] = "DARK"; break;
+       case ThemeMode::DARK: j["themeMode"] = "DARK"; break;
         case ThemeMode::LIGHT: j["themeMode"] = "LIGHT"; break;
         default: j["themeMode"] = "AUTO"; break;
     }

@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/alex/dev/PacketTracer/backend/include
+CXX_INCLUDES = -I/home/alex/dev/Hovia/backend/include
 
 CXX_FLAGS =  -O2 -std=gnu++17 -Wall -Wextra -Wpedantic -Werror
 

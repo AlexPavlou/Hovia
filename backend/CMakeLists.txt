@@ -14,19 +14,20 @@ include_directories(include)
 
 add_executable(hovia
     src/main.cpp
-    src/IpTracker.cpp
+    src/IpTracker/IpTracker.cpp
     src/capture/capture.cpp
     src/lookup/lookup.cpp
     src/platform-dependent/utils.cpp
     src/utils/Logger.cpp
     src/utils/settings.cpp
-    src/ui/ui.cpp
+    src/api/api.cpp
     src/utils/lookup_utils/traceroute.cpp
 )
 
 target_include_directories(hovia PRIVATE
     /usr/local/include
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
     ${CURL_INCLUDE_DIRS}
 )
 

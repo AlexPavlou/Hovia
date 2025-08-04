@@ -1,0 +1,56 @@
+[
+{
+  "directory": "/home/alex/dev/Hovia/backend/build",
+  "command": "/usr/bin/c++  -I/home/alex/dev/Hovia/backend/include -I/home/alex/dev/Hovia/backend/src  -O2 -std=gnu++17 -Wall -Wextra -Wpedantic -Werror -o CMakeFiles/hovia.dir/src/main.cpp.o -c /home/alex/dev/Hovia/backend/src/main.cpp",
+  "file": "/home/alex/dev/Hovia/backend/src/main.cpp",
+  "output": "CMakeFiles/hovia.dir/src/main.cpp.o"
+},
+{
+  "directory": "/home/alex/dev/Hovia/backend/build",
+  "command": "/usr/bin/c++  -I/home/alex/dev/Hovia/backend/include -I/home/alex/dev/Hovia/backend/src  -O2 -std=gnu++17 -Wall -Wextra -Wpedantic -Werror -o CMakeFiles/hovia.dir/src/IpTracker/IpTracker.cpp.o -c /home/alex/dev/Hovia/backend/src/IpTracker/IpTracker.cpp",
+  "file": "/home/alex/dev/Hovia/backend/src/IpTracker/IpTracker.cpp",
+  "output": "CMakeFiles/hovia.dir/src/IpTracker/IpTracker.cpp.o"
+},
+{
+  "directory": "/home/alex/dev/Hovia/backend/build",
+  "command": "/usr/bin/c++  -I/home/alex/dev/Hovia/backend/include -I/home/alex/dev/Hovia/backend/src  -O2 -std=gnu++17 -Wall -Wextra -Wpedantic -Werror -o CMakeFiles/hovia.dir/src/capture/capture.cpp.o -c /home/alex/dev/Hovia/backend/src/capture/capture.cpp",
+  "file": "/home/alex/dev/Hovia/backend/src/capture/capture.cpp",
+  "output": "CMakeFiles/hovia.dir/src/capture/capture.cpp.o"
+},
+{
+  "directory": "/home/alex/dev/Hovia/backend/build",
+  "command": "/usr/bin/c++  -I/home/alex/dev/Hovia/backend/include -I/home/alex/dev/Hovia/backend/src  -O2 -std=gnu++17 -Wall -Wextra -Wpedantic -Werror -o CMakeFiles/hovia.dir/src/lookup/lookup.cpp.o -c /home/alex/dev/Hovia/backend/src/lookup/lookup.cpp",
+  "file": "/home/alex/dev/Hovia/backend/src/lookup/lookup.cpp",
+  "output": "CMakeFiles/hovia.dir/src/lookup/lookup.cpp.o"
+},
+{
+  "directory": "/home/alex/dev/Hovia/backend/build",
+  "command": "/usr/bin/c++  -I/home/alex/dev/Hovia/backend/include -I/home/alex/dev/Hovia/backend/src  -O2 -std=gnu++17 -Wall -Wextra -Wpedantic -Werror -o CMakeFiles/hovia.dir/src/platform-dependent/utils.cpp.o -c /home/alex/dev/Hovia/backend/src/platform-dependent/utils.cpp",
+  "file": "/home/alex/dev/Hovia/backend/src/platform-dependent/utils.cpp",
+  "output": "CMakeFiles/hovia.dir/src/platform-dependent/utils.cpp.o"
+},
+{
+  "directory": "/home/alex/dev/Hovia/backend/build",
+  "command": "/usr/bin/c++  -I/home/alex/dev/Hovia/backend/include -I/home/alex/dev/Hovia/backend/src  -O2 -std=gnu++17 -Wall -Wextra -Wpedantic -Werror -o CMakeFiles/hovia.dir/src/utils/Logger.cpp.o -c /home/alex/dev/Hovia/backend/src/utils/Logger.cpp",
+  "file": "/home/alex/dev/Hovia/backend/src/utils/Logger.cpp",
+  "output": "CMakeFiles/hovia.dir/src/utils/Logger.cpp.o"
+},
+{
+  "directory": "/home/alex/dev/Hovia/backend/build",
+  "command": "/usr/bin/c++  -I/home/alex/dev/Hovia/backend/include -I/home/alex/dev/Hovia/backend/src  -O2 -std=gnu++17 -Wall -Wextra -Wpedantic -Werror -o CMakeFiles/hovia.dir/src/utils/settings.cpp.o -c /home/alex/dev/Hovia/backend/src/utils/settings.cpp",
+  "file": "/home/alex/dev/Hovia/backend/src/utils/settings.cpp",
+  "output": "CMakeFiles/hovia.dir/src/utils/settings.cpp.o"
+},
+{
+  "directory": "/home/alex/dev/Hovia/backend/build",
+  "command": "/usr/bin/c++  -I/home/alex/dev/Hovia/backend/include -I/home/alex/dev/Hovia/backend/src  -O2 -std=gnu++17 -Wall -Wextra -Wpedantic -Werror -o CMakeFiles/hovia.dir/src/api/api.cpp.o -c /home/alex/dev/Hovia/backend/src/api/api.cpp",
+  "file": "/home/alex/dev/Hovia/backend/src/api/api.cpp",
+  "output": "CMakeFiles/hovia.dir/src/api/api.cpp.o"
+},
+{
+  "directory": "/home/alex/dev/Hovia/backend/build",
+  "command": "/usr/bin/c++  -I/home/alex/dev/Hovia/backend/include -I/home/alex/dev/Hovia/backend/src  -O2 -std=gnu++17 -Wall -Wextra -Wpedantic -Werror -o CMakeFiles/hovia.dir/src/utils/lookup_utils/traceroute.cpp.o -c /home/alex/dev/Hovia/backend/src/utils/lookup_utils/traceroute.cpp",
+  "file": "/home/alex/dev/Hovia/backend/src/utils/lookup_utils/traceroute.cpp",
+  "output": "CMakeFiles/hovia.dir/src/utils/lookup_utils/traceroute.cpp.o"
+}
+]

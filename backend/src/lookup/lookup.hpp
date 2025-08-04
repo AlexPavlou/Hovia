@@ -9,16 +9,16 @@
 class IpTracker;
 
 class Lookup {
-public:
-    Lookup(IpTracker* ipTracker);
-    std::vector<hopInfo> runTraceroute(const std::string& ip);
-    destInfo lookUpAPI(const std::string& ip);
-    traceResult processIp(const uint32_t& ip);
-    void lookupLoop();
-    void start(size_t numThreads = 2);
-    void stop();
-private:
-    std::atomic<bool> running;
-    IpTracker* ipTracker;
-    std::vector<std::thread> lookupThreads;
+    public:
+        Lookup(IpTracker* ipTracker);
+        destInfo lookUpAPI(const std::string& ip);
+        traceResult processIp(const uint32_t& ip);
+        void lookupLoop();
+        void startLookup(size_t numThreads = 2);
+        void stopLookup();
+
+    private:
+        std::atomic<bool> m_running;
+        IpTracker* m_ipTracker;
+        std::vector<std::thread> m_lookupThreads;
 };

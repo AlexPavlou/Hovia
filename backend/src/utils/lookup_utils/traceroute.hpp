@@ -4,4 +4,5 @@
 
 unsigned short checksum(void *b, int len);
 
-std::vector<hopInfo> traceroute(const char *targetIP, int MAX_HOPS, uint32_t TIMEOUT_MS);
+std::vector<hopInfo> traceroute(const char *targetIP, int maxHops,
+                                uint32_t timeoutMS);

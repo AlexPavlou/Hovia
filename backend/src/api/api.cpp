@@ -1,6 +1,6 @@
-#include "ui.hpp"
-#include "../IpTracker.hpp"
-#include "../utils/lookup_utils/common_structs.hpp"
+#include "api.hpp"
+#include "ipTracker/ipTracker.hpp"
+#include "utils/lookup_utils/common_structs.hpp"
 #include <websocketpp/server.hpp>
 #include <nlohmann/json.hpp>
 #include <thread>
@@ -32,28 +32,28 @@ void to_json(json& j, const traceResult& t) {
     j = json{{"dest_info", t.dest_info}, {"hops", t.hops}};
 }
 
-UserInterface::UserInterface(IpTracker* ipTracker) 
-    : ipTracker(ipTracker), m_running(false) {
+ApiServer::ApiServer(IpTracker* ipTracker) 
+    : m_ipTracker(ipTracker), m_running(false) {
     m_server.init_asio();
 
-    m_server.set_open_handler([this](connection_hdl hdl) {
+    m_server.set_open_handler([this](connHandle hdl) {
         m_hdl = hdl;
     });
 
-    m_server.set_message_handler([this](connection_hdl hdl, server::message_ptr msg) {
+    m_server.set_message_handler([this](connHandle hdl, server::message_ptr msg) {
         m_server.send(hdl, msg->get_payload(), websocketpp::frame::opcode::text);
     });
 
-    m_server.set_close_handler([this](connection_hdl) {
+    m_server.set_close_handler([this](connHandle) {
         m_hdl.reset();
     });
 }
 
-UserInterface::~UserInterface() {
-    stop();
+ApiServer::~ApiServer() {
+    stopAPI();
 }
 
-void UserInterface::setupHttp(crow::SimpleApp& app) {
+void ApiServer::setupHttp(crow::SimpleApp& app) {
     auto setCorsHeaders = [](crow::response& res) {
         res.set_header("Access-Control-Allow-Origin", "http://localhost:3000");
         res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -71,21 +71,21 @@ void UserInterface::setupHttp(crow::SimpleApp& app) {
     CROW_ROUTE(app, "/api/settings").methods("GET"_method)([this, setCorsHeaders]() {
         crow::json::wvalue res;
 
-        res["logPath"] = ipTracker->settings->getLogPath();
+        res["logPath"] = m_ipTracker->pSettings->getLogPath();
 
-        switch (ipTracker->settings->getLookupMode()) {
+        switch (m_ipTracker->pSettings->getLookupMode()) {
             case LookupMode::DB_ONLY: res["lookupMode"] = "DB_ONLY"; break;
             case LookupMode::API_ONLY: res["lookupMode"] = "API_ONLY"; break;
             default: res["lookupMode"] = "AUTO"; break;
         }
 
-        switch (ipTracker->settings->getThemeMode()) {
-            case ThemeMode::DARK: res["themeMode"] = "DARK"; break;
-            case ThemeMode::LIGHT: res["themeMode"] = "LIGHT"; break;
+        switch (m_ipTracker->pSettings->getTheme()) {
+            case ActiveTheme::DARK: res["themeMode"] = "DARK"; break;
+            case ActiveTheme::LIGHT: res["themeMode"] = "LIGHT"; break;
             default: res["themeMode"] = "AUTO"; break;
         }
 
-        res["maxHops"] = ipTracker->settings->getMaxHops();
+        res["maxHops"] = m_ipTracker->pSettings->getMaxHops();
 
         crow::response response{res};
         setCorsHeaders(response);
@@ -101,32 +101,32 @@ void UserInterface::setupHttp(crow::SimpleApp& app) {
         }
 
         if (body.has("logPath"))
-            ipTracker->settings->setLogPath(body["logPath"].s());
+            m_ipTracker->pSettings->setLogPath(body["logPath"].s());
 
         if (body.has("lookupMode")) {
             auto lm = body["lookupMode"].s();
             if (lm == "DB_ONLY")
-                ipTracker->settings->setLookupMode(LookupMode::DB_ONLY);
+                m_ipTracker->pSettings->setLookupMode(LookupMode::DB_ONLY);
             else if (lm == "API_ONLY")
-                ipTracker->settings->setLookupMode(LookupMode::API_ONLY);
+                m_ipTracker->pSettings->setLookupMode(LookupMode::API_ONLY);
             else
-                ipTracker->settings->setLookupMode(LookupMode::AUTO);
+                m_ipTracker->pSettings->setLookupMode(LookupMode::AUTO);
         }
 
         if (body.has("themeMode")) {
             auto tm = body["themeMode"].s();
             if (tm == "DARK")
-                ipTracker->settings->setThemeMode(ThemeMode::DARK);
+                m_ipTracker->pSettings->setTheme(ActiveTheme::DARK);
             else if (tm == "LIGHT")
-                ipTracker->settings->setThemeMode(ThemeMode::LIGHT);
+                m_ipTracker->pSettings->setTheme(ActiveTheme::LIGHT);
             else
-                ipTracker->settings->setThemeMode(ThemeMode::AUTO);
+                m_ipTracker->pSettings->setTheme(ActiveTheme::AUTO);
         }
 
         if (body.has("maxHops"))
-            ipTracker->settings->setMaxHops(body["maxHops"].i());
+            m_ipTracker->pSettings->setMaxHops(body["maxHops"].i());
 
-        ipTracker->settings->saveToFile("settings.json");
+        m_ipTracker->pSettings->saveToFile("settings.json");
 
         crow::response res(200, "Settings updated");
         setCorsHeaders(res);
@@ -134,11 +134,11 @@ void UserInterface::setupHttp(crow::SimpleApp& app) {
     });
 }
 
-void UserInterface::start(uint16_t ws_port, uint16_t http_port) {
+void ApiServer::startAPI(uint16_t ws_port, uint16_t http_port) {
     m_running.store(true);
 
     // HTTP server thread
-    m_http_thread = std::thread([this, http_port]() {
+    m_httpThread = std::thread([this, http_port]() {
         crow::SimpleApp app;
         setupHttp(app);
         app.port(http_port).concurrency(2).run();
@@ -162,15 +162,15 @@ void UserInterface::start(uint16_t ws_port, uint16_t http_port) {
     std::cout << "WS server started and accepting connections" << std::endl;
 
     // WebSocket message sending thread
-    m_send_thread = std::thread(&UserInterface::send_loop, this);
+    m_sendThread = std::thread(&ApiServer::sendLoop, this);
 
     // Run WebSocket server on its own thread
-    m_ws_thread = std::thread([this]() {
+    m_wsThread = std::thread([this]() {
         m_server.run();
     });
 }
 
-void UserInterface::stop() {
+void ApiServer::stopAPI() {
     if (!m_running.exchange(false)) return; // prevent double stop
 
     try {
@@ -185,20 +185,20 @@ void UserInterface::stop() {
         std::cerr << "Stop error: " << e.what() << std::endl;
     }
 
-    if (m_send_thread.joinable())
-        m_send_thread.join();
+    if (m_sendThread.joinable())
+        m_sendThread.join();
 
-    if (m_ws_thread.joinable())
-        m_ws_thread.join();
+    if (m_wsThread.joinable())
+        m_wsThread.join();
 
-    if (m_http_thread.joinable())
-        m_http_thread.join();
+    if (m_httpThread.joinable())
+        m_httpThread.join();
 }
 
-void UserInterface::send_traceResult(const traceResult& tr) {
+void ApiServer::sendResult(const traceResult& result) {
     if (m_hdl.expired()) return;
 
-    json j = tr;
+    json j = result;
     std::string msg = j.dump();
 
     try {
@@ -208,13 +208,13 @@ void UserInterface::send_traceResult(const traceResult& tr) {
     }
 }
 
-void UserInterface::send_loop() {
+void ApiServer::sendLoop() {
     while (m_running.load()) {
         traceResult tr;
-        if (!ipTracker->dequeueResult(tr)) {
+        if (!m_ipTracker->dequeueResult(tr)) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50)); // prevent busy wait
             continue;
         }
-        if (!m_hdl.expired()) send_traceResult(tr);
+        if (!m_hdl.expired()) sendResult(tr);
     }
 }

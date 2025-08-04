@@ -63,7 +63,7 @@ CMAKE_BINARY_DIR = /home/alex/dev/Hovia/backend/build
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/app.dir/all
+all: CMakeFiles/hovia.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -71,34 +71,34 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/app.dir/clean
+clean: CMakeFiles/hovia.dir/clean
 .PHONY : clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/app.dir
+# Target rules for target CMakeFiles/hovia.dir
 
 # All Build rule for target.
-CMakeFiles/app.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/alex/dev/Hovia/backend/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10 "Built target app"
-.PHONY : CMakeFiles/app.dir/all
+CMakeFiles/hovia.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/alex/dev/Hovia/backend/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10 "Built target hovia"
+.PHONY : CMakeFiles/hovia.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/app.dir/rule: cmake_check_build_system
+CMakeFiles/hovia.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/alex/dev/Hovia/backend/build/CMakeFiles 10
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/app.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/hovia.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/alex/dev/Hovia/backend/build/CMakeFiles 0
-.PHONY : CMakeFiles/app.dir/rule
+.PHONY : CMakeFiles/hovia.dir/rule
 
 # Convenience name for target.
-app: CMakeFiles/app.dir/rule
-.PHONY : app
+hovia: CMakeFiles/hovia.dir/rule
+.PHONY : hovia
 
 # clean rule for target.
-CMakeFiles/app.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/clean
-.PHONY : CMakeFiles/app.dir/clean
+CMakeFiles/hovia.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/clean
+.PHONY : CMakeFiles/hovia.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

@@ -1,17 +1,15 @@
 #include "lookup.hpp"
-#include "../IpTracker.hpp"
-#include "../utils/lookup_utils/traceroute.hpp"
-//#include "../utils/Logger.hpp"
+#include "ipTracker/ipTracker.hpp"
+#include "utils/lookup_utils/traceroute.hpp"
+#include "utils/logger.hpp"
 #include <cstdint>
-//#include <filesystem>
+// #include <filesystem>
 #include <thread>
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
 
-#include <iostream>
-
-Lookup::Lookup(IpTracker* ipTracker) 
-    : running(false), ipTracker(ipTracker) {}
+Lookup::Lookup(IpTracker* ipTracker)
+    : m_running(false), m_ipTracker(ipTracker) {}
 
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     auto* response = static_cast<std::string*>(userp);
@@ -20,10 +18,10 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
 }
 
 destInfo Lookup::lookUpAPI(const std::string& ip) {
-    std::cout<<ip;
     destInfo info{};
-    std::string url = "http://ip-api.com/json/" + ip +
-                      "?fields=status,country,regionName,isp,org,as,asname,lat,lon,timezone";
+    std::string url =
+        "http://ip-api.com/json/" + ip +
+        "?fields=status,country,regionName,isp,org,as,asname,lat,lon,timezone";
 
     CURL* curl = curl_easy_init();
     if (!curl)
@@ -38,22 +36,25 @@ destInfo Lookup::lookUpAPI(const std::string& ip) {
     CURLcode res = curl_easy_perform(curl);
     curl_easy_cleanup(curl);
 
+    // return early if unsuccessful
     if (res != CURLE_OK)
         return info;
 
+    // otherwise parse info and populate teh destInfo struct with the API's
+    // response
     auto json = nlohmann::json::parse(response, nullptr, false);
     if (!json.is_object() || json["status"] != "success")
         return info;
 
     strncpy(info.ip, ip.c_str(), sizeof(info.ip));
     info.ip[sizeof(info.ip) - 1] = '\0';
-    info.country   = json["country"];
-    info.region    = json["regionName"];
-    info.isp       = json["isp"];
-    info.org       = json["org"];
-    info.as        = json["as"];
-    info.asname    = json["asname"];
-    info.latitude  = json["lat"];
+    info.country = json["country"];
+    info.region = json["regionName"];
+    info.isp = json["isp"];
+    info.org = json["org"];
+    info.as = json["as"];
+    info.asname = json["asname"];
+    info.latitude = json["lat"];
     info.longitude = json["lon"];
     info.time_zone = json["timezone"];
 
@@ -66,7 +67,10 @@ traceResult Lookup::processIp(const uint32_t& ip) {
     addr.s_addr = htonl(ip);
     char ipStr[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &addr, ipStr, sizeof(ipStr));
-    result.hops = traceroute(ipStr, 15, 500);//ipTracker->settings->getMaxHops(), ipTracker->settings->getTimeout());
+    result.timestamp = LOGGER->getCurrentTimestamp();
+    result.hops =
+        traceroute(ipStr, 15, 500);  // ipTracker->settings->getMaxHops(),
+                                     // ipTracker->settings->getTimeout());
     result.dest_info = lookUpAPI(ipStr);
 
     /*if (ipTracker->settings->lookupMode.load() == LookupMode::AUTO) {
@@ -89,28 +93,30 @@ traceResult Lookup::processIp(const uint32_t& ip) {
 void Lookup::lookupLoop() {
     uint32_t ip;
     traceResult newResult;
-    while (running.load()) {
-        if (!ipTracker->dequeueIp(ip)) break;
-        //std::cout<<"\n2.Popped : " << ip << " from the queue";
+    while (m_running.load()) {
+        if (!m_ipTracker->dequeueIp(ip))
+            break;
         newResult = processIp(ip);
-        //std::cout<<"Enqueued result for ip: " << ip;
-        ipTracker->enqueueResult(newResult);
-        //std::cout<<"\n3.Added : " << ip << " to UI queue";
+        m_ipTracker->enqueueResult(newResult);
     }
 }
 
-void Lookup::start(size_t numThreads) {
-    if (running.exchange(true)) return;   // already running?
-    lookupThreads.clear();
+void Lookup::startLookup(size_t numThreads) {
+    if (m_running.exchange(true))
+        return;
+    m_lookupThreads.clear();
+    // generate numThreads threads that run lookupLoop
     for (size_t i = 0; i < numThreads; ++i) {
-        lookupThreads.emplace_back(&Lookup::lookupLoop, this);
+        m_lookupThreads.emplace_back(&Lookup::lookupLoop, this);
     }
 }
 
-void Lookup::stop() {
-    running.store(false);
-    for (auto& t : lookupThreads) {
-        if (t.joinable()) t.join();
+void Lookup::stopLookup() {
+    m_running.store(false);
+    for (auto& t : m_lookupThreads) {
+        // try and join each of the threads in m_lookupThreads
+        if (t.joinable())
+            t.join();
     }
-    lookupThreads.clear();
+    m_lookupThreads.clear();
 }

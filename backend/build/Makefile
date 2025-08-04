@@ -117,48 +117,72 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named app
+# Target rules for targets named hovia
 
 # Build rule for target.
-app: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 app
-.PHONY : app
+hovia: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 hovia
+.PHONY : hovia
 
 # fast build rule for target.
-app/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/build
-.PHONY : app/fast
+hovia/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/build
+.PHONY : hovia/fast
 
-src/IpTracker.o: src/IpTracker.cpp.o
-.PHONY : src/IpTracker.o
+src/IpTracker/IpTracker.o: src/IpTracker/IpTracker.cpp.o
+.PHONY : src/IpTracker/IpTracker.o
 
 # target to build an object file
-src/IpTracker.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/IpTracker.cpp.o
-.PHONY : src/IpTracker.cpp.o
+src/IpTracker/IpTracker.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/IpTracker/IpTracker.cpp.o
+.PHONY : src/IpTracker/IpTracker.cpp.o
 
-src/IpTracker.i: src/IpTracker.cpp.i
-.PHONY : src/IpTracker.i
+src/IpTracker/IpTracker.i: src/IpTracker/IpTracker.cpp.i
+.PHONY : src/IpTracker/IpTracker.i
 
 # target to preprocess a source file
-src/IpTracker.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/IpTracker.cpp.i
-.PHONY : src/IpTracker.cpp.i
+src/IpTracker/IpTracker.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/IpTracker/IpTracker.cpp.i
+.PHONY : src/IpTracker/IpTracker.cpp.i
 
-src/IpTracker.s: src/IpTracker.cpp.s
-.PHONY : src/IpTracker.s
+src/IpTracker/IpTracker.s: src/IpTracker/IpTracker.cpp.s
+.PHONY : src/IpTracker/IpTracker.s
 
 # target to generate assembly for a file
-src/IpTracker.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/IpTracker.cpp.s
-.PHONY : src/IpTracker.cpp.s
+src/IpTracker/IpTracker.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/IpTracker/IpTracker.cpp.s
+.PHONY : src/IpTracker/IpTracker.cpp.s
+
+src/api/api.o: src/api/api.cpp.o
+.PHONY : src/api/api.o
+
+# target to build an object file
+src/api/api.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/api/api.cpp.o
+.PHONY : src/api/api.cpp.o
+
+src/api/api.i: src/api/api.cpp.i
+.PHONY : src/api/api.i
+
+# target to preprocess a source file
+src/api/api.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/api/api.cpp.i
+.PHONY : src/api/api.cpp.i
+
+src/api/api.s: src/api/api.cpp.s
+.PHONY : src/api/api.s
+
+# target to generate assembly for a file
+src/api/api.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/api/api.cpp.s
+.PHONY : src/api/api.cpp.s
 
 src/capture/capture.o: src/capture/capture.cpp.o
 .PHONY : src/capture/capture.o
 
 # target to build an object file
 src/capture/capture.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/capture/capture.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/capture/capture.cpp.o
 .PHONY : src/capture/capture.cpp.o
 
 src/capture/capture.i: src/capture/capture.cpp.i
@@ -166,7 +190,7 @@ src/capture/capture.i: src/capture/capture.cpp.i
 
 # target to preprocess a source file
 src/capture/capture.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/capture/capture.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/capture/capture.cpp.i
 .PHONY : src/capture/capture.cpp.i
 
 src/capture/capture.s: src/capture/capture.cpp.s
@@ -174,7 +198,7 @@ src/capture/capture.s: src/capture/capture.cpp.s
 
 # target to generate assembly for a file
 src/capture/capture.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/capture/capture.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/capture/capture.cpp.s
 .PHONY : src/capture/capture.cpp.s
 
 src/lookup/lookup.o: src/lookup/lookup.cpp.o
@@ -182,7 +206,7 @@ src/lookup/lookup.o: src/lookup/lookup.cpp.o
 
 # target to build an object file
 src/lookup/lookup.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/lookup/lookup.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/lookup/lookup.cpp.o
 .PHONY : src/lookup/lookup.cpp.o
 
 src/lookup/lookup.i: src/lookup/lookup.cpp.i
@@ -190,7 +214,7 @@ src/lookup/lookup.i: src/lookup/lookup.cpp.i
 
 # target to preprocess a source file
 src/lookup/lookup.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/lookup/lookup.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/lookup/lookup.cpp.i
 .PHONY : src/lookup/lookup.cpp.i
 
 src/lookup/lookup.s: src/lookup/lookup.cpp.s
@@ -198,7 +222,7 @@ src/lookup/lookup.s: src/lookup/lookup.cpp.s
 
 # target to generate assembly for a file
 src/lookup/lookup.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/lookup/lookup.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/lookup/lookup.cpp.s
 .PHONY : src/lookup/lookup.cpp.s
 
 src/main.o: src/main.cpp.o
@@ -206,7 +230,7 @@ src/main.o: src/main.cpp.o
 
 # target to build an object file
 src/main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/main.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/main.cpp.o
 .PHONY : src/main.cpp.o
 
 src/main.i: src/main.cpp.i
@@ -214,7 +238,7 @@ src/main.i: src/main.cpp.i
 
 # target to preprocess a source file
 src/main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/main.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/main.cpp.i
 .PHONY : src/main.cpp.i
 
 src/main.s: src/main.cpp.s
@@ -222,7 +246,7 @@ src/main.s: src/main.cpp.s
 
 # target to generate assembly for a file
 src/main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/main.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
 src/platform-dependent/utils.o: src/platform-dependent/utils.cpp.o
@@ -230,7 +254,7 @@ src/platform-dependent/utils.o: src/platform-dependent/utils.cpp.o
 
 # target to build an object file
 src/platform-dependent/utils.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/platform-dependent/utils.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/platform-dependent/utils.cpp.o
 .PHONY : src/platform-dependent/utils.cpp.o
 
 src/platform-dependent/utils.i: src/platform-dependent/utils.cpp.i
@@ -238,7 +262,7 @@ src/platform-dependent/utils.i: src/platform-dependent/utils.cpp.i
 
 # target to preprocess a source file
 src/platform-dependent/utils.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/platform-dependent/utils.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/platform-dependent/utils.cpp.i
 .PHONY : src/platform-dependent/utils.cpp.i
 
 src/platform-dependent/utils.s: src/platform-dependent/utils.cpp.s
@@ -246,39 +270,15 @@ src/platform-dependent/utils.s: src/platform-dependent/utils.cpp.s
 
 # target to generate assembly for a file
 src/platform-dependent/utils.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/platform-dependent/utils.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/platform-dependent/utils.cpp.s
 .PHONY : src/platform-dependent/utils.cpp.s
-
-src/ui/ui.o: src/ui/ui.cpp.o
-.PHONY : src/ui/ui.o
-
-# target to build an object file
-src/ui/ui.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/ui/ui.cpp.o
-.PHONY : src/ui/ui.cpp.o
-
-src/ui/ui.i: src/ui/ui.cpp.i
-.PHONY : src/ui/ui.i
-
-# target to preprocess a source file
-src/ui/ui.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/ui/ui.cpp.i
-.PHONY : src/ui/ui.cpp.i
-
-src/ui/ui.s: src/ui/ui.cpp.s
-.PHONY : src/ui/ui.s
-
-# target to generate assembly for a file
-src/ui/ui.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/ui/ui.cpp.s
-.PHONY : src/ui/ui.cpp.s
 
 src/utils/Logger.o: src/utils/Logger.cpp.o
 .PHONY : src/utils/Logger.o
 
 # target to build an object file
 src/utils/Logger.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/utils/Logger.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/utils/Logger.cpp.o
 .PHONY : src/utils/Logger.cpp.o
 
 src/utils/Logger.i: src/utils/Logger.cpp.i
@@ -286,7 +286,7 @@ src/utils/Logger.i: src/utils/Logger.cpp.i
 
 # target to preprocess a source file
 src/utils/Logger.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/utils/Logger.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/utils/Logger.cpp.i
 .PHONY : src/utils/Logger.cpp.i
 
 src/utils/Logger.s: src/utils/Logger.cpp.s
@@ -294,7 +294,7 @@ src/utils/Logger.s: src/utils/Logger.cpp.s
 
 # target to generate assembly for a file
 src/utils/Logger.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/utils/Logger.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/utils/Logger.cpp.s
 .PHONY : src/utils/Logger.cpp.s
 
 src/utils/lookup_utils/traceroute.o: src/utils/lookup_utils/traceroute.cpp.o
@@ -302,7 +302,7 @@ src/utils/lookup_utils/traceroute.o: src/utils/lookup_utils/traceroute.cpp.o
 
 # target to build an object file
 src/utils/lookup_utils/traceroute.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/utils/lookup_utils/traceroute.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/utils/lookup_utils/traceroute.cpp.o
 .PHONY : src/utils/lookup_utils/traceroute.cpp.o
 
 src/utils/lookup_utils/traceroute.i: src/utils/lookup_utils/traceroute.cpp.i
@@ -310,7 +310,7 @@ src/utils/lookup_utils/traceroute.i: src/utils/lookup_utils/traceroute.cpp.i
 
 # target to preprocess a source file
 src/utils/lookup_utils/traceroute.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/utils/lookup_utils/traceroute.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/utils/lookup_utils/traceroute.cpp.i
 .PHONY : src/utils/lookup_utils/traceroute.cpp.i
 
 src/utils/lookup_utils/traceroute.s: src/utils/lookup_utils/traceroute.cpp.s
@@ -318,7 +318,7 @@ src/utils/lookup_utils/traceroute.s: src/utils/lookup_utils/traceroute.cpp.s
 
 # target to generate assembly for a file
 src/utils/lookup_utils/traceroute.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/utils/lookup_utils/traceroute.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/utils/lookup_utils/traceroute.cpp.s
 .PHONY : src/utils/lookup_utils/traceroute.cpp.s
 
 src/utils/settings.o: src/utils/settings.cpp.o
@@ -326,7 +326,7 @@ src/utils/settings.o: src/utils/settings.cpp.o
 
 # target to build an object file
 src/utils/settings.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/utils/settings.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/utils/settings.cpp.o
 .PHONY : src/utils/settings.cpp.o
 
 src/utils/settings.i: src/utils/settings.cpp.i
@@ -334,7 +334,7 @@ src/utils/settings.i: src/utils/settings.cpp.i
 
 # target to preprocess a source file
 src/utils/settings.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/utils/settings.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/utils/settings.cpp.i
 .PHONY : src/utils/settings.cpp.i
 
 src/utils/settings.s: src/utils/settings.cpp.s
@@ -342,7 +342,7 @@ src/utils/settings.s: src/utils/settings.cpp.s
 
 # target to generate assembly for a file
 src/utils/settings.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/src/utils/settings.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hovia.dir/build.make CMakeFiles/hovia.dir/src/utils/settings.cpp.s
 .PHONY : src/utils/settings.cpp.s
 
 # Help Target
@@ -353,10 +353,13 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... app"
-	@echo "... src/IpTracker.o"
-	@echo "... src/IpTracker.i"
-	@echo "... src/IpTracker.s"
+	@echo "... hovia"
+	@echo "... src/IpTracker/IpTracker.o"
+	@echo "... src/IpTracker/IpTracker.i"
+	@echo "... src/IpTracker/IpTracker.s"
+	@echo "... src/api/api.o"
+	@echo "... src/api/api.i"
+	@echo "... src/api/api.s"
 	@echo "... src/capture/capture.o"
 	@echo "... src/capture/capture.i"
 	@echo "... src/capture/capture.s"
@@ -369,9 +372,6 @@ help:
 	@echo "... src/platform-dependent/utils.o"
 	@echo "... src/platform-dependent/utils.i"
 	@echo "... src/platform-dependent/utils.s"
-	@echo "... src/ui/ui.o"
-	@echo "... src/ui/ui.i"
-	@echo "... src/ui/ui.s"
 	@echo "... src/utils/Logger.o"
 	@echo "... src/utils/Logger.i"
 	@echo "... src/utils/Logger.s"

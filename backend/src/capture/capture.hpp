@@ -7,17 +7,18 @@
 class IpTracker;
 
 class Capture {
-public:
-    Capture(IpTracker* ipTracker);
-    void start();
-    void stop();
-private:
-    std::thread captureThread;
-    std::unique_ptr<Tins::Sniffer> sniffer;
-    IpTracker* ipTracker;
-    bool isKnown(const uint32_t& ip);
-    void addIp(const uint32_t& ip);
-    void captureLoop();
-    std::unordered_set<std::uint32_t> ipCache;
-    bool packet_handler(const Tins::PDU& pdu);
+    public:
+        Capture(IpTracker* ipTracker);
+        void startCapture();
+        void stopCapture();
+
+    private:
+        std::thread m_captureThread;
+        std::unique_ptr<Tins::Sniffer> m_pSniffer;
+        IpTracker* m_ipTracker;
+        bool isKnown(const uint32_t& ip);
+        void addIp(const uint32_t& ip);
+        void captureLoop();
+        std::unordered_set<std::uint32_t> m_ipCache;
+        bool packetHandler(const Tins::PDU& pdu);
 };

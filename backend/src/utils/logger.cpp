@@ -1,4 +1,4 @@
-#include "Logger.hpp"
+#include "logger.hpp"
 #include <chrono>
 #include <ctime>
 #include <iomanip>
@@ -15,12 +15,12 @@ std::string Logger::getCurrentTimestamp() const {
     return ss.str();
 }
 
-Logger::Logger(std::shared_ptr<Settings>& settings)
-    : settings(std::move(settings)) {}
+Logger::Logger(std::shared_ptr<Settings>& pSettings)
+    : m_pSettings(std::move(pSettings)) {}
 
 void Logger::logError(const std::string& context, const std::string& message) const {
-    std::lock_guard<std::mutex> lock(logMutex);
-    std::ofstream ofs(settings->getLogPath(), std::ios::app);
+    std::lock_guard<std::mutex> lock(m_logMutex);
+    std::ofstream ofs(m_pSettings->getLogPath(), std::ios::app);
     if (!ofs) return; // silently fail if file can't open
 
     ofs << "[" << getCurrentTimestamp() << "] " << "[ERROR] [" << context << "] " << message << "\n";

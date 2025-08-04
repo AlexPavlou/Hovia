@@ -1,23 +1,21 @@
-#include "IpTracker.hpp"
-#include "utils/Logger.hpp"
+#include "ipTracker/ipTracker.hpp"
+#include "utils/logger.hpp"
 #include <curl/curl.h>
 
-#define settingsPath "settings.json"
-
 int main() {
-    std::shared_ptr<Settings> settings = Settings::loadFromFile(settingsPath);
-    LOGGER = std::make_shared<Logger>(settings);
+    // initialize pSettings ptr with the settings found in SETTINGS_PATH
+    std::shared_ptr<Settings> pSettings = Settings::loadFromFile(SETTINGS_PATH);
+    LOGGER = std::make_shared<Logger>(pSettings);
     curl_global_init(CURL_GLOBAL_DEFAULT);
 
-    IpTracker mainManager;
-    mainManager.startApp();
+    IpTracker appManager;
+    appManager.start();
 
-    std::cout << "Press enter line to stop";
+    std::cout << "Press enter to stop capturing";
     std::cin.get();
 
-    mainManager.stopApp();
-
+    // clean up and close the application
+    appManager.stop();
     curl_global_cleanup();
-
-    mainManager.saveSettings();
+    appManager.saveSettings();
 }

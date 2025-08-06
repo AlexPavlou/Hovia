@@ -14,3 +14,6 @@ frontend/hovia-ui/yarn-error.log*
 Thumbs.db
 
 .env
+.clang-format
+.compile_commands.json
+.prettierrc

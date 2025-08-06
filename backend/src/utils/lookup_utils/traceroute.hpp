@@ -2,7 +2,8 @@
 #include <vector>
 #include "common_structs.hpp"
 
-unsigned short checksum(void *b, int len);
+// ICMP checksum function
+unsigned short checksum(void* data, int len);
 
-std::vector<hopInfo> traceroute(const char *targetIP, int maxHops,
+std::vector<hopInfo> traceroute(const char* targetIP, int maxHops,
                                 uint32_t timeoutMS);

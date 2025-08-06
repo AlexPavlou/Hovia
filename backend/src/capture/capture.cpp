@@ -1,6 +1,6 @@
 #include "capture.hpp"
 #include "ipTracker/ipTracker.hpp"
-#include "platform-dependent/utils.hpp"
+#include "platform-dependent/network_interface.hpp"
 #include "utils/logger.hpp"
 #include <pcap/pcap.h>
 #include <tins/tins.h>

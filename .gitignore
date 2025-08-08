@@ -1,8 +1,8 @@
 # Node modules
-frontend/hovia-ui/node_modules
+frontend/hovia-ui/node_modules/
 
 # Build output
-backend/hovia-ui/build/
+backend/build/
 
 # Logs
 frontend/hovia-ui/npm-debug.log*
@@ -13,7 +13,30 @@ frontend/hovia-ui/yarn-error.log*
 .DS_Store
 Thumbs.db
 
+# Environment and settings files
 .env
 .clang-format
 .compile_commands.json
 .prettierrc
+
+# Cache directories (clang, CMake etc.)
+**/.cache/
+**/CMakeFiles/
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/.clang/
+**/.clang-tidy-cache/
+
+# Other temporary or system files
+*.log
+*.obj
+*.o
+*.exe
+
+# Ignore backup files created by editors, e.g., Vim or Emacs
+*~
+*.swp
+*.swo
+
+# Ignore Visual Studio Code workspace files if used
+.vscode/

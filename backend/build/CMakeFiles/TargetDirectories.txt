@@ -1,3 +1,0 @@
-/home/alex/dev/Hovia/backend/build/CMakeFiles/hovia.dir
-/home/alex/dev/Hovia/backend/build/CMakeFiles/edit_cache.dir
-/home/alex/dev/Hovia/backend/build/CMakeFiles/rebuild_cache.dir

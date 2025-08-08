@@ -60,7 +60,9 @@ bool IpTracker::dequeueResult(traceResult &Result) {
 // each one to spawn their respective number of threads and begin performing
 // their operations
 void IpTracker::start() {
+    std::cout << "Starting capture:";
     m_capture.startCapture();
+    std::cout << "s2 capture:";
     m_lookup.startLookup();
     m_api.startAPI(9002, 8080);
 }

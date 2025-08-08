@@ -1,7 +1,7 @@
 #include "capture.hpp"
 #include "ipTracker/ipTracker.hpp"
-#include "platform-dependent/network_interface.hpp"
-#include "utils/logger.hpp"
+#include "platform_dependent/network_interface/network_interface.hpp"
+#include "utils/logger/logger.hpp"
 #include <pcap/pcap.h>
 #include <tins/tins.h>
 #include <thread>
@@ -27,7 +27,7 @@ void printIp(uint32_t ip) {
 
     char buf[INET_ADDRSTRLEN];
     if (inet_ntop(AF_INET, &addr, buf, sizeof(buf)) != nullptr) {
-        // std::cout << buf << std::endl;
+        std::cout << buf << std::endl;
     } else {
         std::perror("inet_ntop");
     }
@@ -43,7 +43,6 @@ bool Capture::packetHandler(const PDU& pdu) {
         printIp(dst_ip_uint);
         addIp(dst_ip_uint);
         m_ipTracker->enqueueIp(dst_ip_uint);
-        // std::cout<<"\n1.Added : " << dst_ip_uint << " to the queue";
     }
     return true;
 }
@@ -53,6 +52,9 @@ void Capture::startCapture() {
     // use the correct network interface depending on settings' saved option
     std::string interface =
         (interfaceOption == "Auto") ? getDefaultInterface() : interfaceOption;
+
+    if (interface.empty())
+        return;
 
     try {
         Tins::SnifferConfiguration config;
@@ -65,7 +67,8 @@ void Capture::startCapture() {
 
         m_captureThread = std::thread(&Capture::captureLoop, this);
     } catch (const std::exception& ex) {
-        LOGGER->logError("Error starting capture: ", ex.what());
+        LOGGER->logError("Error starting capture in startCapture(): ",
+                         ex.what());
     }
 }
 

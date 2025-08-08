@@ -1,5 +1,5 @@
 #pragma once
-#include "../utils/lookup_utils/common_structs.hpp"
+#include "utils/common_structs.hpp"
 #include <atomic>
 #include <thread>
 #include <pcap.h>

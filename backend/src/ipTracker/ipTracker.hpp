@@ -2,8 +2,8 @@
 #include "capture/capture.hpp"
 #include "lookup/lookup.hpp"
 #include "api/api.hpp"
-#include "utils/lookup_utils/common_structs.hpp"
-#include "utils/settings.hpp"
+#include "utils/common_structs.hpp"
+#include "utils/settings/settings.hpp"
 #include <condition_variable>
 #include <memory>
 #include <queue>

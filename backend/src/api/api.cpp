@@ -1,6 +1,6 @@
 #include "api.hpp"
 #include "ipTracker/ipTracker.hpp"
-#include "utils/lookup_utils/common_structs.hpp"
+#include "utils/common_structs.hpp"
 #include <websocketpp/server.hpp>
 #include <nlohmann/json.hpp>
 #include <thread>

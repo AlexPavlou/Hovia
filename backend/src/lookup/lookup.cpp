@@ -1,7 +1,7 @@
 #include "lookup.hpp"
 #include "ipTracker/ipTracker.hpp"
-#include "utils/lookup_utils/traceroute.hpp"
-#include "utils/logger.hpp"
+#include "platform_dependent/traceroute/traceroute.hpp"
+#include "utils/logger/logger.hpp"
 #include <cstdint>
 // #include <filesystem>
 #include <thread>

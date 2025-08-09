@@ -85,14 +85,23 @@ export default function SidebarMinimal({
             {/* Top: Logo */}
             <div
                 style={{
-                    fontFamily: "'Poppins', sans-serif",
-                    fontWeight: '700',
-                    fontSize: 20,
-                    color: isDark ? '#fafafa' : '#222',
-                    letterSpacing: 1.2,
+                    padding: '0 8px',
+                    marginBottom: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
                 }}
             >
-                H
+                <img
+                    src={require('../assets/logo.svg').default} // or import logo from path and use {logo}
+                    alt="Logo"
+                    style={{
+                        maxWidth: '40px',
+                        height: 'auto',
+                        display: 'block',
+                    }}
+                />
             </div>
 
             {/* Middle: Navigation */}

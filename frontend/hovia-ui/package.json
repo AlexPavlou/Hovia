@@ -7,13 +7,18 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "d3": "^7.9.0",
+    "d3-geo": "^3.1.1",
     "leaflet": "^1.9.4",
     "leaflet-polylinedecorator": "^1.6.0",
     "lucide-react": "^0.536.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-globe.gl": "^2.35.0",
     "react-leaflet": "^5.0.0",
     "react-scripts": "5.0.1",
+    "react-simple-maps": "^3.0.0",
+    "three": "^0.179.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

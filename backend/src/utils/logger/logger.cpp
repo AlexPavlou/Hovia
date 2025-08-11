@@ -23,15 +23,19 @@ std::string Logger::getCurrentTimestamp() const {
 void Logger::logData(const std::string& data) {
     std::lock_guard<std::mutex> lock(m_logMutex);
     std::ofstream ofs(m_pSettings->getLogPath(), std::ios::app);
-    if (!ofs) return; // silently fail if file can't open
+    if (!ofs)
+        return;  // silently fail if file can't open
 
-    ofs << " " << data << " ";
+    ofs << "[" << getCurrentTimestamp() << "] " << data << "\n";
 }
 
-void Logger::logError(const std::string& context, const std::string& message) const {
+void Logger::logError(const std::string& context,
+                      const std::string& message) const {
     std::lock_guard<std::mutex> lock(m_logMutex);
     std::ofstream ofs(m_pSettings->getLogPath(), std::ios::app);
-    if (!ofs) return;
+    if (!ofs)
+        return;
 
-    ofs << "[" << getCurrentTimestamp() << "] " << "[ERROR] [" << context << "] " << message << "\n";
+    ofs << "[" << getCurrentTimestamp() << "] " << "[ERROR] [" << context
+        << "] " << message << "\n";
 }

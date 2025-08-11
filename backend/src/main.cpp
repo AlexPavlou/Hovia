@@ -5,7 +5,7 @@
 
 int main() {
     // initialize pSettings ptr with the settings found in SETTINGS_PATH
-    std::shared_ptr<Settings> pSettings = Settings::loadFromFile(SETTINGS_PATH);
+    std::shared_ptr<Settings> pSettings = Settings::loadFromFile();
     std::cout << pSettings->getLogPath();
     LOGGER = std::make_shared<Logger>(pSettings);
     curl_global_init(CURL_GLOBAL_DEFAULT);

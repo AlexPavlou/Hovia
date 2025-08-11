@@ -68,9 +68,8 @@ traceResult Lookup::processIp(const uint32_t& ip) {
     char ipStr[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &addr, ipStr, sizeof(ipStr));
     result.timestamp = LOGGER->getCurrentTimestamp();
-    result.hops =
-        traceroute(ipStr, 15, 500);  // ipTracker->settings->getMaxHops(),
-                                     // ipTracker->settings->getTimeout());
+    result.hops = traceroute(ipStr, m_ipTracker->pSettings->getMaxHops(),
+                             m_ipTracker->pSettings->getTimeout());
     result.dest_info = lookUpAPI(ipStr);
 
     /*if (ipTracker->settings->lookupMode.load() == LookupMode::AUTO) {

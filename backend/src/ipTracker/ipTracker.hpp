@@ -9,8 +9,6 @@
 #include <queue>
 #include <mutex>
 
-constexpr char SETTINGS_PATH[] = "settings.json";
-
 class IpTracker {
     public:
         IpTracker();

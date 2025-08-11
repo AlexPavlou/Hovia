@@ -18,7 +18,7 @@ class ApiServer {
         ~ApiServer();
 
         // start webbsocket and HTTP servers on the specified ports
-        void startAPI(uint16_t port, uint16_t http_port);
+        void startAPI();
         void stopAPI();
         // send traceResult to the connected websocket client
         void sendResult(const traceResult& result);

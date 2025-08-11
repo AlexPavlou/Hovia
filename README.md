@@ -19,26 +19,34 @@
 
 ## App Summary
 
-Hovia is a full-stack application with a C++ backend and a React frontend that captures IP packets in real time and visualizes their routes—including the in-between hops—on an interactive map.
+Hovia is a full-stack application that captures IP packets in real time and visualizes their routes — including the intermediate hops — on an interactive 3D globe.
 
-The backend makes use of libtins to sniff IP traffic and low-level libraries to perform the traceroute operation, while IP lookups are performed asynchronously via API calls. Meanwhile, the frontend connects through WebSocket to receive live data and display detailed routing paths on an SVG map, helping you understand how your network traffic flows globally.
+The backend is written in C++ and uses libtins to sniff IP traffic, along with low-level libraries to perform traceroute operations. IP lookups are handled asynchronously via API calls.
 
+The frontend, built with React, connects to the backend in two ways:
+
+1. Through WebSocket to receive live data and render detailed routing paths on the 3D map.
+
+2. Through a RESTful HTTP API to retrieve and modify app settings.
+
+Visualizing how your network traffic flows globally.
 
 ---
 
 ## Key Features
 
-- Packet sniffing powered by *libtins* (and *libpcap*/WinPcap), all in a C++ environment  
+- Packet sniffing powered by *libtins* (and *libpcap*/WinPcap), all in a performant C++ environment  
 - Thread-safe queues enable smooth data flow between sniffing, lookup, and API threads  
 - Asynchronous retrieval of IP info and geolocation via **ip-api.com**  
 - Interactive React frontend showing IP hops and metadata on an SVG map  
-- Cross-platform: Windows, Linux, macOS (including BSD)  
+- Cross-platform support: Windows, Linux, macOS, BSD  
 - Light and dark theme support with responsive design  
 - Packet history log with upcoming filtering and tooltip features  
-- Simple configuration through `settings.js` (see [#Configuration](#Configuration) for further information)
+- Extensive configuration via the frontend (all settings are stored in settings.js). See [#Configuration](#Configuration) for further information
 - RESTful API implementation for retrieving and updating app settings from the frontend
 - Live visualization of IP packet routes on an interactive map  
-- Real-time updates over WebSocket connection  
+- Real-time updates over a WebSocket connection  
+- Customizable HTTP and Websocket ports
 
 
 ---
@@ -47,12 +55,12 @@ The backend makes use of libtins to sniff IP traffic and low-level libraries to 
 
 <div align="center">
 
-| Component     | Technology                       |
+| Component     | Technology                      |
 | ------------- | ------------------------------- |
-| Backend       | C++ with libtins, libpcap/WinPcap |
+| Backend       | C++ with libtins, libpcap/WinPcap|
 | Frontend      | React, JSX, JavaScript, CSS     |
 | Communication | WebSocket, HTTP                 |
-| Build System  | CMake (backend)                 |
+| Build System  | CMake (backend), npm (frontend) |
 
 </div>
 
@@ -63,9 +71,9 @@ The backend makes use of libtins to sniff IP traffic and low-level libraries to 
 
 ### Prerequisites
 
-> - Node.js and npm installed  
-> - libpcap (Linux/macOS) or WinPcap (Windows)  
-> - libtins installed  
+- Node.js and npm
+- libpcap (Linux/macOS) or WinPcap (Windows)  
+- libtins
 
 ### Installation & Build
 
@@ -125,17 +133,74 @@ Simply Use your computer as normal while Hovia runs.
 
 ## Configuration
 
-The app can be customized via the `settings.js` file to specify API endpoints, themes, and other preferences.
+The app can be customised via the frontend or the `settings.js` file to specify the theme, the interface and other preferences.
 
-> **TODO:** Document all setting variables.
+<details>
+<summary>Language</summary>
+Language used for app menus. Options: `English`, `Greek`, or `Spanish`.
+Default: `English`
+</details>
 
+<details>
+<summary>Animation Toggle</summary>
+Toggles animations (`On` or `Off`)
+Default: `On`
+</details>
+
+<details>
+<summary>Verbose Logging</summary>
+Makes app logging extensive.
+Default: `Off`
+</details>
+
+<details>
+<summary>traceroute Timeout</summary>
+Time in seconds to wait before traceroute requests time out.  
+Default: `1 second`
+</details>
+
+<details>
+<summary>Log Path</summary>
+File path where application logs are saved.  
+Default: `./app.log`
+</details>
+
+<details>
+<summary>Interface Option</summary>
+Network interface used for capturing packets. If set to `Auto`, the program uses the default interface.  
+Default: `Auto`
+</details>
+
+<details>
+<summary>IP Filter</summary>
+Filter rules to limit the traffic captured.  
+Default: `(ip and (tcp or udp or icmp)) and not dst net 10.0.0.0/8 and not dst net 172.16.0.0/12 and not dst net 192.168.0.0/16 and not dst net 224.0.0.0/4 and not dst net 240.0.0.0/4` (Tracks outgoing TCP/UDP/ICMP IP packets excluding IPs in private, multicast, and reserved ranges.)
+</details>
+
+<details>
+<summary>Lookup Mode</summary>
+Method used for IP lookups. Options: `Auto`, `DB` (database), or `API`. If `Auto`, the app tries the DB before the API.  
+Default: `API`
+</details>
+
+<details>
+<summary>Active Theme</summary>
+Current UI theme (e.g., `Auto`, `light`, or `dark`).  
+Default: `Auto`
+</details>
+
+<details>
+<summary>Max Hops</summary>
+Maximum number of hops traceroute will follow.  
+Default: `15`
+</details>
 
 ---
 
 ## Acknowledgments
 
 - High-performance packet sniffing with [libpcap](https://github.com/the-tcpdump-group/libpcap), [WinPcap](https://www.winpcap.org/), and [libtins](https://libtins.github.io)  
-- Forked, debugged, and altered a Unix traceroute implementation [traceroute](https://github.com/imdibr/traceroute) by [imdibr](https://github.com/imdibr)  
+- Utilised a Unix traceroute implementation, `[traceroute](https://github.com/imdibr/traceroute)` by [imdibr](https://github.com/imdibr), applying debugging and modifications
 - IP geolocation data provided by [ip-api.com](http://ip-api.com)  
 - Inspired by network tools like Wireshark
 

@@ -1,6 +1,7 @@
 #include "api.hpp"
 #include "ipTracker/ipTracker.hpp"
 #include "utils/common_structs.hpp"
+#include "utils/logger/logger.hpp"
 #include <websocketpp/server.hpp>
 #include <nlohmann/json.hpp>
 #include <thread>
@@ -80,33 +81,64 @@ void ApiServer::setupHttp(crow::SimpleApp& app) {
         .methods("GET"_method)([this, setCorsHeaders]() {
             crow::json::wvalue res;
 
+            // Basic strings
             res["logPath"] = m_ipTracker->pSettings->getLogPath();
+            res["interfaceOption"] =
+                m_ipTracker->pSettings->getInterfaceOption();
+            res["filter"] = m_ipTracker->pSettings->getFilter();
 
+            // LookupMode as string
             switch (m_ipTracker->pSettings->getLookupMode()) {
-                case LookupMode::DB_ONLY:
-                    res["lookupMode"] = "DB_ONLY";
+                case LookupMode::DB:
+                    res["lookupMode"] = "DB";
                     break;
-                case LookupMode::API_ONLY:
-                    res["lookupMode"] = "API_ONLY";
+                case LookupMode::API:
+                    res["lookupMode"] = "API";
                     break;
                 default:
                     res["lookupMode"] = "AUTO";
                     break;
             }
 
+            // Theme as string
             switch (m_ipTracker->pSettings->getTheme()) {
                 case ActiveTheme::DARK:
-                    res["themeMode"] = "DARK";
+                    res["activeTheme"] = "DARK";
                     break;
                 case ActiveTheme::LIGHT:
-                    res["themeMode"] = "LIGHT";
+                    res["activeTheme"] = "LIGHT";
                     break;
                 default:
-                    res["themeMode"] = "AUTO";
+                    res["activeTheme"] = "AUTO";
                     break;
             }
 
+            // Language as string
+            switch (m_ipTracker->pSettings->getLanguage()) {
+                case ActiveLanguage::ENGLISH:
+                    res["activeLanguage"] = "ENGLISH";
+                    break;
+                case ActiveLanguage::SPANISH:
+                    res["activeLanguage"] = "SPANISH";
+                    break;
+                case ActiveLanguage::GREEK:
+                    res["activeLanguage"] = "GREEK";
+                    break;
+                default:
+                    res["activeLanguage"] = "ENGLISH";
+                    break;
+            }
+
+            // Other values
             res["maxHops"] = m_ipTracker->pSettings->getMaxHops();
+            res["timeout"] = m_ipTracker->pSettings->getTimeout();
+
+            // Boolean flags
+            res["hasAnimation"] = m_ipTracker->pSettings->hasAnimation();
+            res["hasVerbose"] = m_ipTracker->pSettings->hasVerbose();
+
+            res["HTTPPort"] = m_ipTracker->pSettings->getHTTP();
+            res["WebsocketPort"] = m_ipTracker->pSettings->getWebsocket();
 
             crow::response response{res};
             setCorsHeaders(response);
@@ -126,18 +158,25 @@ void ApiServer::setupHttp(crow::SimpleApp& app) {
             if (body.has("logPath"))
                 m_ipTracker->pSettings->setLogPath(body["logPath"].s());
 
+            if (body.has("interfaceOption"))
+                m_ipTracker->pSettings->setInterfaceOption(
+                    body["interfaceOption"].s());
+
+            if (body.has("filter"))
+                m_ipTracker->pSettings->setFilter(body["filter"].s());
+
             if (body.has("lookupMode")) {
                 auto lookupMode = body["lookupMode"].s();
-                if (lookupMode == "DB_ONLY")
-                    m_ipTracker->pSettings->setLookupMode(LookupMode::DB_ONLY);
-                else if (lookupMode == "API_ONLY")
-                    m_ipTracker->pSettings->setLookupMode(LookupMode::API_ONLY);
+                if (lookupMode == "DB")
+                    m_ipTracker->pSettings->setLookupMode(LookupMode::DB);
+                else if (lookupMode == "API")
+                    m_ipTracker->pSettings->setLookupMode(LookupMode::API);
                 else
                     m_ipTracker->pSettings->setLookupMode(LookupMode::AUTO);
             }
 
-            if (body.has("ActiveTheme")) {
-                auto theme = body["ActiveTheme"].s();
+            if (body.has("activeTheme")) {
+                auto theme = body["activeTheme"].s();
                 if (theme == "DARK")
                     m_ipTracker->pSettings->setTheme(ActiveTheme::DARK);
                 else if (theme == "LIGHT")
@@ -146,10 +185,39 @@ void ApiServer::setupHttp(crow::SimpleApp& app) {
                     m_ipTracker->pSettings->setTheme(ActiveTheme::AUTO);
             }
 
+            if (body.has("activeLanguage")) {
+                auto lang = body["activeLanguage"].s();
+                if (lang == "ENGLISH")
+                    m_ipTracker->pSettings->setLanguage(
+                        ActiveLanguage::ENGLISH);
+                else if (lang == "SPANISH")
+                    m_ipTracker->pSettings->setLanguage(
+                        ActiveLanguage::SPANISH);
+                else if (lang == "GREEK")
+                    m_ipTracker->pSettings->setLanguage(ActiveLanguage::GREEK);
+                else
+                    m_ipTracker->pSettings->setLanguage(
+                        ActiveLanguage::ENGLISH);
+            }
+
             if (body.has("maxHops"))
                 m_ipTracker->pSettings->setMaxHops(body["maxHops"].i());
 
-            m_ipTracker->pSettings->saveToFile("settings.json");
+            if (body.has("timeout"))
+                m_ipTracker->pSettings->setTimeout(body["timeout"].i());
+
+            if (body.has("hasAnimation"))
+                m_ipTracker->pSettings->setAnimation(body["hasAnimation"].b());
+
+            if (body.has("hasVerbose"))
+                m_ipTracker->pSettings->setVerbose(body["hasVerbose"].b());
+            if (body.has("HTTPPort"))
+                m_ipTracker->pSettings->setHTTP(body["HTTPPort"].i());
+
+            if (body.has("WebsocketPort"))
+                m_ipTracker->pSettings->setWebsocket(body["WebsocketPort"].i());
+
+            // m_ipTracker->pSettings->saveToFile();
 
             crow::response res(200, "Settings updated");
             setCorsHeaders(res);
@@ -157,29 +225,30 @@ void ApiServer::setupHttp(crow::SimpleApp& app) {
         });
 }
 
-void ApiServer::startAPI(uint16_t ws_port, uint16_t http_port) {
+void ApiServer::startAPI() {
     m_running.store(true);
 
     // HTTP server thread
-    m_httpThread = std::thread([this, http_port]() {
+    m_httpThread = std::thread([this]() {
         crow::SimpleApp app;
         setupHttp(app);
-        app.port(http_port).concurrency(2).run();
+        app.port(m_ipTracker->pSettings->getHTTP()).concurrency(2).run();
     });
 
     // start websocket server listening on the given port
     boost::system::error_code ec;
+    uint16_t ws_port = m_ipTracker->pSettings->getWebsocket();
     m_server.listen(ws_port, ec);
     if (ec) {
-        std::cerr << "WebSocket server listen error: " << ec.message()
-                  << std::endl;
+        LOGGER->logError("startAPI()",
+                         "WebSocket server listen error:" + ec.message());
         return;
     }
 
     m_server.set_access_channels(websocketpp::log::alevel::all);
     m_server.set_error_channels(websocketpp::log::elevel::all);
 
-    std::cout << "Starting WS server on port " << ws_port << std::endl;
+    // LOGGER->logData("Starting WS server on port " + ws_port);
 
     m_server.start_accept();
 
@@ -228,7 +297,8 @@ void ApiServer::sendResult(const traceResult& result) {
     try {
         m_server.send(m_hdl, msg, websocketpp::frame::opcode::text);
     } catch (const websocketpp::exception& e) {
-        std::cerr << "WebSocket send error: " << e.what() << '\n';
+        LOGGER->logError("sendResult()",
+                         std::string("WebSocket send error: ") + e.what());
     }
 }
 
@@ -236,14 +306,21 @@ void ApiServer::sendResult(const traceResult& result) {
 // the dequeueResult(traceResult& tr) and sendResult(const traceResult& result)
 // functions
 void ApiServer::sendLoop() {
-    while (m_running.load()) {
-        traceResult tr;
-        if (!m_ipTracker->dequeueResult(tr)) {
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds(50));  // prevent busy wait
-            continue;
+    try {
+        while (m_running.load()) {
+            traceResult tr;
+            if (!m_ipTracker->dequeueResult(tr)) {
+                std::this_thread::sleep_for(
+                    std::chrono::milliseconds(50));  // prevent busy wait
+                continue;
+            }
+            if (!m_hdl.expired())
+                sendResult(tr);
         }
-        if (!m_hdl.expired())
-            sendResult(tr);
+    } catch (const std::exception& e) {
+        LOGGER->logError("sendLoop()",
+                         std::string("Unexpected exception: ") + e.what());
+    } catch (...) {
+        LOGGER->logError("secondLoop()", "Unknown exception caught");
     }
 }

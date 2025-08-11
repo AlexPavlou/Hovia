@@ -1,15 +1,42 @@
 #include "settings.hpp"
 #include "utils/logger/logger.hpp"
+#include "utils/settings/settings_utils/settings.hpp"
 #include <fstream>
 #include <memory>
 #include <mutex>
 #include <iostream>
+#include <filesystem>
+#include <exception>
+
+constexpr char SETTINGS_FILE[] = "config.json";
 
 using json = nlohmann::json;
+
+uint16_t Settings::getHTTP() const { return m_HTTPPort.load(); }
+
+void Settings::setHTTP(uint16_t newHTTP) { m_HTTPPort.store(newHTTP); }
+
+uint16_t Settings::getWebsocket() const { return m_WebsocketPort.load(); }
+
+void Settings::setWebsocket(uint16_t newWebsocket) {
+    m_WebsocketPort.store(newWebsocket);
+}
 
 uint8_t Settings::getTimeout() const { return m_timeout.load(); }
 
 void Settings::setTimeout(uint8_t newTimeout) { m_timeout.store(newTimeout); }
+
+bool Settings::hasAnimation() const { return m_hasAnimation.load(); }
+
+void Settings::setAnimation(bool newAnimationToggle) {
+    m_hasAnimation.store(newAnimationToggle);
+}
+
+bool Settings::hasVerbose() const { return m_hasVerbose.load(); }
+
+void Settings::setVerbose(bool newVerboseLogging) {
+    m_hasVerbose.store(newVerboseLogging);
+}
 
 std::string Settings::getLogPath() const {
     const std::lock_guard<std::mutex> lock(m_logPathMutex);
@@ -45,66 +72,150 @@ int Settings::getMaxHops() const { return m_maxHops.load(); }
 
 void Settings::setMaxHops(const int val) { m_maxHops.store(val); }
 
-ActiveTheme Settings::getTheme() const { return m_activeTheme.load(); }
-
-void Settings::setTheme(ActiveTheme mode) { m_activeTheme.store(mode); }
-
 LookupMode Settings::getLookupMode() const { return m_lookupMode.load(); }
 
 void Settings::setLookupMode(LookupMode mode) { m_lookupMode.store(mode); }
 
+ActiveLanguage Settings::getLanguage() const { return m_activeLanguage.load(); }
+
+void Settings::setLanguage(ActiveLanguage language) {
+    m_activeLanguage.store(language);
+};
+
+ActiveTheme Settings::getTheme() const { return m_activeTheme.load(); }
+
+void Settings::setTheme(ActiveTheme mode) { m_activeTheme.store(mode); }
+
 // This function receives a path and begins to parse said json file, setting up
 // all of the app's settings atomically and setting up mutexes for all string
 // variables (logPath, interfaceToUse and pcapFilter)
-std::shared_ptr<Settings> Settings::loadFromFile(const std::string& path) {
+std::shared_ptr<Settings> Settings::loadFromFile() {
     auto s = std::make_shared<Settings>();
-    std::ifstream in(path);
+
+    std::filesystem::path configDir = getConfigPath();
+    std::filesystem::path configFilePath = configDir / SETTINGS_FILE;
+
+    try {
+        createConfigDir(configDir.string());
+    } catch (const std::exception& e) {
+        LOGGER->logError("loadFromFile()",
+                         "Failed to create config directory: " +
+                             configDir.string() + " - " + e.what());
+        throw;
+    }
+
+    std::ifstream in(configFilePath);
     if (in) {
         try {
             json j;
             in >> j;
 
-            auto logPath = j.value("logPath", "log.log");
+            // Strings with mutex locks
             {
-                const std::lock_guard<std::mutex> lock(s->m_logPathMutex);
-                s->m_logPath = logPath;
+                std::lock_guard<std::mutex> lock(s->m_logPathMutex);
+                s->m_logPath = j.value("logPath", "app.log");
+            }
+            {
+                std::lock_guard<std::mutex> lock(s->m_interfaceMutex);
+                s->m_interfaceOption = j.value("interfaceOption", "wlan0");
+            }
+            {
+                std::lock_guard<std::mutex> lock(s->m_ipFilterMutex);
+                s->m_ipFilter =
+                    j.value("filter",
+                            "(ip and (tcp or udp or icmp)) and not dst net "
+                            "10.0.0.0/8 and not dst net 172.16.0.0/12 and not "
+                            "dst net 192.168.0.0/16 and not dst net "
+                            "224.0.0.0/4 and not dst net 240.0.0.0/4");
             }
 
-            auto lookupMode = j.value("lookupMode", "AUTO");
-            if (lookupMode == "DB_ONLY")
-                s->m_lookupMode.store(LookupMode::DB_ONLY);
-            else if (lookupMode == "API_ONLY")
-                s->m_lookupMode.store(LookupMode::API_ONLY);
+            // Enum LookupMode
+            std::string lookupModeStr = j.value("lookupMode", "AUTO");
+            if (lookupModeStr == "DB")
+                s->m_lookupMode.store(LookupMode::DB);
+            else if (lookupModeStr == "API" || lookupModeStr == "API_ONLY")
+                s->m_lookupMode.store(LookupMode::API);
             else
                 s->m_lookupMode.store(LookupMode::AUTO);
 
-            auto activeTheme = j.value("activeTheme", "AUTO");
-            if (activeTheme == "DARK")
+            // Enum ActiveTheme
+            std::string themeStr = j.value("activeTheme", "AUTO");
+            if (themeStr == "DARK")
                 s->m_activeTheme.store(ActiveTheme::DARK);
-            else if (activeTheme == "LIGHT")
+            else if (themeStr == "LIGHT")
                 s->m_activeTheme.store(ActiveTheme::LIGHT);
             else
                 s->m_activeTheme.store(ActiveTheme::AUTO);
 
-            s->m_maxHops.store(j.value("maxHops", 15));
+            // Enum ActiveLanguage
+            std::string langStr = j.value("activeLanguage", "ENGLISH");
+            if (langStr == "ENGLISH")
+                s->m_activeLanguage.store(ActiveLanguage::ENGLISH);
+            else if (langStr == "SPANISH")
+                s->m_activeLanguage.store(ActiveLanguage::SPANISH);
+            else if (langStr == "GREEK")
+                s->m_activeLanguage.store(ActiveLanguage::GREEK);
+            else
+                s->m_activeLanguage.store(ActiveLanguage::ENGLISH);
 
-        } catch (...) {
-            std::cerr << "Failed to parse settings JSON\n";
-            LOGGER->logError("Failed to parse settings JSON: ", path);
+            // Integral and boolean values
+            s->m_maxHops.store(j.value("maxHops", 15));
+            s->m_timeout.store(j.value("timeout", 1));
+
+            s->m_hasAnimation.store(j.value("hasAnimation", false));
+            s->m_hasVerbose.store(j.value("hasVerbose", false));
+
+            // Ports (optional if you added)
+            s->m_HTTPPort.store(j.value("HTTPPort", 8080));
+            s->m_WebsocketPort.store(j.value("WebsocketPort", 9090));
+
+        } catch (const std::exception& e) {
+            LOGGER->logError("loadFromFile()",
+                             "Failed to parse settings JSON: " +
+                                 configFilePath.string() + " " + e.what());
         }
+    } else {
+        // Optionally log "config file not found" here
     }
+
     return s;
 }
 
-void Settings::saveToFile(const std::string& path) const {
-    json j;
-    j["logPath"] = getLogPath();
+void Settings::saveToFile() {
+    std::filesystem::path configDir = getConfigPath();
+    std::filesystem::path configFilePath = configDir / SETTINGS_FILE;
 
+    try {
+        createConfigDir(configDir.string());
+    } catch (const std::exception& e) {
+        LOGGER->logError("saveToFile()", "Failed to create config directory: " +
+                                             configDir.string() + " - " +
+                                             e.what());
+        throw;
+    }
+
+    json j;
+
+    // Strings with locks
+    {
+        std::lock_guard<std::mutex> lock(m_logPathMutex);
+        j["logPath"] = m_logPath;
+    }
+    {
+        std::lock_guard<std::mutex> lock(m_interfaceMutex);
+        j["interfaceOption"] = m_interfaceOption;
+    }
+    {
+        std::lock_guard<std::mutex> lock(m_ipFilterMutex);
+        j["filter"] = m_ipFilter;
+    }
+
+    // Enums
     switch (m_lookupMode.load()) {
-        case LookupMode::DB_ONLY:
-            j["lookupMode"] = "DB_ONLY";
+        case LookupMode::DB:
+            j["lookupMode"] = "DB";
             break;
-        case LookupMode::API_ONLY:
+        case LookupMode::API:
             j["lookupMode"] = "API_ONLY";
             break;
         default:
@@ -124,13 +235,47 @@ void Settings::saveToFile(const std::string& path) const {
             break;
     }
 
-    j["maxHops"] = m_maxHops.load();
+    switch (m_activeLanguage.load()) {
+        case ActiveLanguage::ENGLISH:
+            j["activeLanguage"] = "ENGLISH";
+            break;
+        case ActiveLanguage::SPANISH:
+            j["activeLanguage"] = "SPANISH";
+            break;
+        case ActiveLanguage::GREEK:
+            j["activeLanguage"] = "GREEK";
+            break;
+        default:
+            j["activeLanguage"] = "ENGLISH";
+            break;
+    }
 
-    std::ofstream out(path);
-    if (out)
-        out << j.dump(4);  // checks if the ofstream is valid and if it is,
-                           // writes the settings json into destination path,
-                           // pretty-printed with 4-space indentations
-    else
-        LOGGER->logError("Failed to open file for writing: ", path);  // otherwise logs an error to the user
+    // Integral and boolean values
+    j["maxHops"] = m_maxHops.load();
+    j["timeout"] = m_timeout.load();
+    j["hasAnimation"] = m_hasAnimation.load();
+    j["hasVerbose"] = m_hasVerbose.load();
+
+    // Ports (if you added)
+    j["HTTPPort"] = m_HTTPPort.load();
+    j["WebsocketPort"] = m_WebsocketPort.load();
+
+    std::ofstream out(configFilePath);
+    if (!out) {
+        LOGGER->logError("saveToFile()",
+                         "Failed to open config file for writing: " +
+                             configFilePath.string());
+        throw std::runtime_error("Failed to open config file for writing: " +
+                                 configFilePath.string());
+    }
+
+    out << j.dump(4);  // pretty print with 4-space indent
+
+    if (out.fail()) {
+        LOGGER->logError("saveToFile()",
+                         "Failed to write config file completely: " +
+                             configFilePath.string());
+        throw std::runtime_error("Failed to fully write config file: " +
+                                 configFilePath.string());
+    }
 }

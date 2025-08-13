@@ -28,13 +28,15 @@ static std::string WideCharToString(PWSTR wstr) {
 std::string getDefaultInterface() {
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        LOGGER->logError("getDefaultInterface", "WSAStartup failed");
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "WSAStartup failed");
         return "";
     }
 
     DWORD interfaceIndex = 0;
     if (GetBestInterface(INADDR_ANY, &interfaceIndex) != NO_ERROR) {
-        LOGGER->logError("getDefaultInterface", "GetBestInterface failed");
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "GetBestInterface failed");
         WSACleanup();
         return "";
     }
@@ -42,8 +44,8 @@ std::string getDefaultInterface() {
     ULONG size = 0;
     if (GetAdaptersAddresses(AF_UNSPEC, 0, nullptr, nullptr, &size) !=
         ERROR_BUFFER_OVERFLOW) {
-        LOGGER->logError("getDefaultInterface",
-                         "GetAdaptersAddresses size query failed");
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "GetAdaptersAddresses size query failed");
         WSACleanup();
         return "";
     }
@@ -54,8 +56,8 @@ std::string getDefaultInterface() {
 
     if (GetAdaptersAddresses(AF_UNSPEC, 0, nullptr, adapters, &size) !=
         NO_ERROR) {
-        LOGGER->logError("getDefaultInterface",
-                         "GetAdaptersAddresses data query failed");
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "GetAdaptersAddresses data query failed");
         WSACleanup();
         return "";
     }
@@ -68,8 +70,8 @@ std::string getDefaultInterface() {
         }
     }
 
-    LOGGER->logError("getDefaultInterface",
-                     "No adapter matched default interface index");
+    Logger::getInstance().log(LogLevel::ERROR, __func__,
+                              "No adapter matched default interface index");
     WSACleanup();
     return "";
 }
@@ -83,8 +85,8 @@ std::string getDefaultInterface() {
 std::string getDefaultInterface() {
     std::ifstream routeFile("/proc/net/route");
     if (!routeFile.is_open()) {
-        LOGGER->logError("getDefaultInterface",
-                         "Failed to open /proc/net/route");
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "Failed to open /proc/net/route");
         return "";
     }
 
@@ -100,8 +102,8 @@ std::string getDefaultInterface() {
             return iface;
     }
 
-    LOGGER->logError("getDefaultInterface",
-                     "Default interface not found in /proc/net/route");
+    Logger::getInstance().log(LogLevel::ERROR, __func__,
+                              "Default interface not found in /proc/net/route");
     return "";
 }
 
@@ -120,18 +122,21 @@ std::string getDefaultInterface() {
     size_t needed = 0;
 
     if (sysctl(mib, 6, nullptr, &needed, nullptr, 0) < 0) {
-        LOGGER->logError("getDefaultInterface", "sysctl size query failed");
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "sysctl size query failed");
         return "";
     }
 
     char* buf = static_cast<char*>(malloc(needed));
     if (!buf) {
-        LOGGER->logError("getDefaultInterface", "Memory allocation failed");
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "Memory allocation failed");
         return "";
     }
 
     if (sysctl(mib, 6, buf, &needed, nullptr, 0) < 0) {
-        LOGGER->logError("getDefaultInterface", "sysctl data query failed");
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "sysctl data query failed");
         free(buf);
         return "";
     }
@@ -171,8 +176,8 @@ std::string getDefaultInterface() {
     free(buf);
 
     if (defaultIface.empty()) {
-        LOGGER->logError("getDefaultInterface",
-                         "Default interface not found via sysctl");
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "Default interface not found via sysctl");
         return "";
     }
 
@@ -182,7 +187,8 @@ std::string getDefaultInterface() {
 #else
 
 std::string getDefaultInterface() {
-    LOGGER->logError("getDefaultInterface", "Unsupported platform");
+    Logger::getInstance().log(LogLevel::ERROR, __func__,
+                              "Unsupported platform");
     return "";
 }
 

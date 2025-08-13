@@ -15,6 +15,7 @@ add_executable(hovia
     src/platform_dependent/traceroute/traceroute.cpp
     src/utils/logger/logger.cpp
     src/utils/settings/settings.cpp
+    src/utils/settings/settings_utils/settings.cpp
     src/api/api.cpp
 )
 

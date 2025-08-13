@@ -12,8 +12,7 @@ enum class ActiveTheme { AUTO, DARK, LIGHT };
 
 struct Settings {
     private:
-        std::atomic<uint16_t> m_HTTPPort{8080};
-        std::atomic<uint16_t> m_WebsocketPort{9090};
+        std::atomic<uint16_t> m_WebsocketPort{9002};
         std::atomic<uint8_t> m_timeout{1};
 
         std::atomic<bool> m_hasAnimation{false};
@@ -23,7 +22,7 @@ struct Settings {
         std::string m_logPath = "app.log";
         mutable std::mutex m_logPathMutex;
 
-        std::string m_interfaceOption = "wlan0";
+        std::string m_interfaceOption = "Auto";
         mutable std::mutex m_interfaceMutex;
 
         std::string m_ipFilter =
@@ -41,9 +40,6 @@ struct Settings {
     public:
         static std::shared_ptr<Settings> loadFromFile();
         void saveToFile();
-
-        uint16_t getHTTP() const;
-        void setHTTP(uint16_t newHTTP);
 
         uint16_t getWebsocket() const;
         void setWebsocket(uint16_t newWebsocket);

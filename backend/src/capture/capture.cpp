@@ -16,9 +16,9 @@ bool Capture::isKnown(const uint32_t& ip) {
     return (m_ipCache.find(ip) != m_ipCache.end());
 }
 
-inline void Capture::addIp(const uint32_t& ip) { m_ipCache.insert(ip); }
+void Capture::addIp(const uint32_t& ip) { m_ipCache.insert(ip); }
 
-void printIp(uint32_t ip) {
+std::string decodeIP(uint32_t ip) {
     // If ip is in host byte order, convert to network order:
     uint32_t net_ip = htonl(ip);
 
@@ -27,9 +27,10 @@ void printIp(uint32_t ip) {
 
     char buf[INET_ADDRSTRLEN];
     if (inet_ntop(AF_INET, &addr, buf, sizeof(buf)) != nullptr) {
-        std::cout << buf << std::endl;
+        return buf;
     } else {
         std::perror("inet_ntop");
+        return "error occured";
     }
 }
 
@@ -40,9 +41,17 @@ bool Capture::packetHandler(const PDU& pdu) {
     uint32_t dst_ip_uint = pdu.rfind_pdu<IP>().dst_addr();
 
     if (!isKnown(dst_ip_uint)) {
-        printIp(dst_ip_uint);
         addIp(dst_ip_uint);
         m_ipTracker->enqueueIp(dst_ip_uint);
+        if (m_ipTracker->pSettings->hasVerbose()) {
+            std::string decodedIP = decodeIP(dst_ip_uint);
+            Logger::getInstance().log(LogLevel::INFO, __func__,
+                                      "Added '" + decodedIP +
+                                          "' IP to the cache");
+            Logger::getInstance().log(LogLevel::INFO, __func__,
+                                      "Pushed '" + decodedIP +
+                                          "' to the IP Queue");
+        }
     }
     return true;
 }
@@ -65,17 +74,30 @@ void Capture::startCapture() {
 
         m_pSniffer = std::make_unique<Sniffer>(interface, config);
 
+        if (m_ipTracker->pSettings->hasVerbose())
+            Logger::getInstance().log(LogLevel::INFO, __func__,
+                                      "Created sniffer object for the '" +
+                                          interface + "' interface");
+
         m_captureThread = std::thread(&Capture::captureLoop, this);
-    } catch (const std::exception& ex) {
-        LOGGER->logError("Error starting capture in startCapture(): ",
-                         ex.what());
+    } catch (const std::exception& e) {
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "Error starting capture: " +
+                                      std::string(e.what()));
     }
 }
 
 void Capture::stopCapture() {
-    if (m_pSniffer)
+    if (m_pSniffer) {
+        if (m_ipTracker->pSettings->hasVerbose())
+            Logger::getInstance().log(LogLevel::INFO, __func__,
+                                      "Stopping sniffer object");
         // notify the sniffer object to stop sniffing
         m_pSniffer->stop_sniff();
+    }
+    if (m_ipTracker->pSettings->hasVerbose())
+        Logger::getInstance().log(LogLevel::INFO, __func__,
+                                  "Attempting to join the capture thread");
     if (m_captureThread.joinable())
         m_captureThread.join();
 
@@ -83,10 +105,15 @@ void Capture::stopCapture() {
 }
 
 void Capture::captureLoop() {
+    if (m_ipTracker->pSettings->hasVerbose())
+        Logger::getInstance().log(LogLevel::INFO, __func__,
+                                  "Thread is initialising the captureLoop");
     try {
         m_pSniffer->sniff_loop(
             [this](const Tins::PDU& pdu) { return packetHandler(pdu); });
-    } catch (const std::exception& ex) {
-        LOGGER->logError("Error in sniff_loop: ", ex.what());
+    } catch (const std::exception& e) {
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "Error in sniff_loop: " +
+                                      std::string(e.what()));
     }
 }

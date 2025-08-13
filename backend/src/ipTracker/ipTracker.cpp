@@ -1,4 +1,5 @@
 #include "ipTracker.hpp"
+#include "utils/logger/logger.hpp"
 #include <curl/curl.h>
 
 IpTracker::IpTracker()
@@ -60,8 +61,17 @@ bool IpTracker::dequeueResult(traceResult &Result) {
 // each one to spawn their respective number of threads and begin performing
 // their operations
 void IpTracker::start() {
+    if (pSettings->hasVerbose())
+        Logger::getInstance().log(LogLevel::INFO, __func__,
+                                  "Calling startCapture()");
     m_capture.startCapture();
+    if (pSettings->hasVerbose())
+        Logger::getInstance().log(LogLevel::INFO, __func__,
+                                  "Calling startLookup()");
     m_lookup.startLookup();
+    if (pSettings->hasVerbose())
+        Logger::getInstance().log(LogLevel::INFO, __func__,
+                                  "Calling startAPI()");
     m_api.startAPI();
 }
 
@@ -75,7 +85,16 @@ void IpTracker::stop() {
     m_ipQueueCond.notify_all();
     m_resultsQueueCond.notify_all();
 
+    if (pSettings->hasVerbose())
+        Logger::getInstance().log(LogLevel::INFO, __func__,
+                                  "Calling stopCapture()");
     m_capture.stopCapture();
+    if (pSettings->hasVerbose())
+        Logger::getInstance().log(LogLevel::INFO, __func__,
+                                  "Calling stopLookup()");
     m_lookup.stopLookup();
+    if (pSettings->hasVerbose())
+        Logger::getInstance().log(LogLevel::INFO, __func__,
+                                  "Calling stopAPI()");
     m_api.stopAPI();
 }

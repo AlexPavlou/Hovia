@@ -12,10 +12,6 @@ constexpr char SETTINGS_FILE[] = "config.json";
 
 using json = nlohmann::json;
 
-uint16_t Settings::getHTTP() const { return m_HTTPPort.load(); }
-
-void Settings::setHTTP(uint16_t newHTTP) { m_HTTPPort.store(newHTTP); }
-
 uint16_t Settings::getWebsocket() const { return m_WebsocketPort.load(); }
 
 void Settings::setWebsocket(uint16_t newWebsocket) {
@@ -98,14 +94,16 @@ std::shared_ptr<Settings> Settings::loadFromFile() {
     try {
         createConfigDir(configDir.string());
     } catch (const std::exception& e) {
-        LOGGER->logError("loadFromFile()",
-                         "Failed to create config directory: " +
-                             configDir.string() + " - " + e.what());
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "Failed to create config directory: '" +
+                                      configDir.string() + "': " + e.what());
         throw;
     }
 
+    std::cout << "Attempting to read from " << configFilePath.string() << '\n';
     std::ifstream in(configFilePath);
     if (in) {
+        std::cout << "WE ARE IN!!\n";
         try {
             json j;
             in >> j;
@@ -117,7 +115,7 @@ std::shared_ptr<Settings> Settings::loadFromFile() {
             }
             {
                 std::lock_guard<std::mutex> lock(s->m_interfaceMutex);
-                s->m_interfaceOption = j.value("interfaceOption", "wlan0");
+                s->m_interfaceOption = j.value("interfaceOption", "Auto");
             }
             {
                 std::lock_guard<std::mutex> lock(s->m_ipFilterMutex);
@@ -165,17 +163,14 @@ std::shared_ptr<Settings> Settings::loadFromFile() {
             s->m_hasAnimation.store(j.value("hasAnimation", false));
             s->m_hasVerbose.store(j.value("hasVerbose", false));
 
-            // Ports (optional if you added)
-            s->m_HTTPPort.store(j.value("HTTPPort", 8080));
-            s->m_WebsocketPort.store(j.value("WebsocketPort", 9090));
+            s->m_WebsocketPort.store(j.value("WebsocketPort", 9002));
 
         } catch (const std::exception& e) {
-            LOGGER->logError("loadFromFile()",
-                             "Failed to parse settings JSON: " +
-                                 configFilePath.string() + " " + e.what());
+            Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                      "Failed to parse settings JSON: '" +
+                                          configFilePath.string() +
+                                          "': " + e.what());
         }
-    } else {
-        // Optionally log "config file not found" here
     }
 
     return s;
@@ -188,9 +183,9 @@ void Settings::saveToFile() {
     try {
         createConfigDir(configDir.string());
     } catch (const std::exception& e) {
-        LOGGER->logError("saveToFile()", "Failed to create config directory: " +
-                                             configDir.string() + " - " +
-                                             e.what());
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "Failed to create config directory: '" +
+                                      configDir.string() + "': " + e.what());
         throw;
     }
 
@@ -256,15 +251,13 @@ void Settings::saveToFile() {
     j["hasAnimation"] = m_hasAnimation.load();
     j["hasVerbose"] = m_hasVerbose.load();
 
-    // Ports (if you added)
-    j["HTTPPort"] = m_HTTPPort.load();
     j["WebsocketPort"] = m_WebsocketPort.load();
 
     std::ofstream out(configFilePath);
     if (!out) {
-        LOGGER->logError("saveToFile()",
-                         "Failed to open config file for writing: " +
-                             configFilePath.string());
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "Failed to open config file for writing: '" +
+                                      configFilePath.string() + "'");
         throw std::runtime_error("Failed to open config file for writing: " +
                                  configFilePath.string());
     }
@@ -272,9 +265,9 @@ void Settings::saveToFile() {
     out << j.dump(4);  // pretty print with 4-space indent
 
     if (out.fail()) {
-        LOGGER->logError("saveToFile()",
-                         "Failed to write config file completely: " +
-                             configFilePath.string());
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "Failed to write config file completely: '" +
+                                      configFilePath.string() + "'");
         throw std::runtime_error("Failed to fully write config file: " +
                                  configFilePath.string());
     }

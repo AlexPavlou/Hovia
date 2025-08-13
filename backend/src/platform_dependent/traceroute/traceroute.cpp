@@ -29,7 +29,7 @@ unsigned short checksum(void *data, int len) {
     return ~sum;
 }
 
-std::vector<hopInfo> traceroute(const char *targetIP, int maxHops,
+std::vector<hopInfo> traceroute(const std::string targetIP, int maxHops,
                                 uint32_t timeoutMS) {
     std::vector<hopInfo> hops;
     hops.reserve(static_cast<size_t>(
@@ -39,8 +39,9 @@ std::vector<hopInfo> traceroute(const char *targetIP, int maxHops,
     struct sockaddr_in dest_addr;
     struct hostent *host;
 
-    if ((host = gethostbyname(targetIP)) == nullptr) {
-        LOGGER->logError("Error: Unable to resolve hostname", "");
+    if ((host = gethostbyname(targetIP.c_str())) == nullptr) {
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "Unable to resolve hostname");
         return {};
     }
 
@@ -50,7 +51,7 @@ std::vector<hopInfo> traceroute(const char *targetIP, int maxHops,
 
     // create a raw socket to send the ICMP packets
     if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0) {
-        LOGGER->logError("Error: Socket error", "");
+        Logger::getInstance().log(LogLevel::ERROR, __func__, "Socket error");
         return {};
     }
 
@@ -60,7 +61,8 @@ std::vector<hopInfo> traceroute(const char *targetIP, int maxHops,
 
     for (int ttl = 1; ttl <= maxHops; ttl++) {
         if (setsockopt(sockfd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0) {
-            LOGGER->logError("Error: Setsockopt failed", "");
+            Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                      "Setsockopt failed");
             close(sockfd);
             return {};
         }

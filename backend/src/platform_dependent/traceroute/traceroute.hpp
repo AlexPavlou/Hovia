@@ -5,5 +5,5 @@
 // ICMP checksum function
 unsigned short checksum(void* data, int len);
 
-std::vector<hopInfo> traceroute(const char* targetIP, int maxHops,
+std::vector<hopInfo> traceroute(const std::string targetIP, int maxHops,
                                 uint32_t timeoutMS);

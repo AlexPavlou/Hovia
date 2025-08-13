@@ -12,14 +12,15 @@ std::string getConfigPath() {
     if (basePath) {
         configDir = std::filesystem::path(basePath) / "hovia";
     } else {
-        LOGGER->logError("createConfigFile()",
-                         "APPDATA env var not set, falling back to TEMP");
+        Logger::getInstance().log(
+            LogLevel::ERROR, __func__,
+            "APPDATA env var not set, falling back to TEMP");
         const char* tempPath = std::getenv("TEMP");
         if (tempPath) {
             configDir = std::filesystem::path(tempPath) / "hovia";
         } else {
-            LOGGER->logError(
-                "createConfigFile()",
+            Logger::getInstance().log(
+                LogLevel::ERROR, __func__,
                 "Neither APPDATA nor TEMP environment variables are set");
             throw std::runtime_error(
                 "Neither APPDATA nor TEMP environment variables are set");
@@ -31,8 +32,8 @@ std::string getConfigPath() {
         configDir = std::filesystem::path(home) / "Library" /
                     "Application Support" / "hovia";
     } else {
-        LOGGER->logError("createConfigFile()",
-                         "HOME env var not set, falling back to /tmp");
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "HOME env var not set, falling back to /tmp");
         configDir = "/tmp/hovia/";
     }
 #else
@@ -40,7 +41,8 @@ std::string getConfigPath() {
     if (home) {
         configDir = std::filesystem::path(home) / ".config" / "hovia";
     } else {
-        LOGGER->logData(
+        Logger::getInstance().log(
+            LogLevel::ERROR, __func__,
             "createConfigFile(): HOME env var not set, falling back to /tmp");
         configDir = "/tmp/hovia/";
     }
@@ -52,9 +54,9 @@ void createConfigDir(const std::string& configDir) {
     std::error_code ec;
     std::filesystem::create_directories(configDir, ec);
     if (ec) {
-        LOGGER->logError("createConfigDir()",
-                         "Failed to create config directory '" + configDir +
-                             "': " + ec.message());
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "Failed to create config directory '" +
+                                      configDir + "': " + ec.message());
         throw std::runtime_error("Failed to create config directory '" +
                                  configDir + "': " + ec.message());
     }

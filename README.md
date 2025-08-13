@@ -46,7 +46,7 @@ Visualizing how your network traffic flows globally.
 - RESTful API implementation for retrieving and updating app settings from the frontend
 - Live visualization of IP packet routes on an interactive map  
 - Real-time updates over a WebSocket connection  
-- Customizable HTTP and Websocket ports
+- Customizable Websocket port
 
 
 ---
@@ -133,66 +133,97 @@ Simply Use your computer as normal while Hovia runs.
 
 ## Configuration
 
-The app can be customised via the frontend or the `settings.js` file to specify the theme, the interface and other preferences.
+The app can be customized either via the frontend UI or by editing the settings.js file. These settings control the app’s behavior, appearance, and network preferences.
 
 <details>
-<summary>Language</summary>
-Language used for app menus. Options: `English`, `Greek`, or `Spanish`.
-Default: `English`
+  <summary><strong>Language</strong></summary>
+
+  &nbsp;&nbsp;Controls the language used for app menus and messages.  
+  **Options:** English, Greek, Spanish  
+  **Default:** English  
 </details>
 
 <details>
-<summary>Animation Toggle</summary>
-Toggles animations (`On` or `Off`)
-Default: `On`
+  <summary><strong>Animation Toggle</strong></summary>
+
+  &nbsp;&nbsp;Enable or disable UI animations.  
+  **Options:** On, Off  
+  **Default:** On  
 </details>
 
 <details>
-<summary>Verbose Logging</summary>
-Makes app logging extensive.
-Default: `Off`
+  <summary><strong>Verbose Logging</strong></summary>
+
+  &nbsp;&nbsp;Turns on extensive logging to help with debugging and monitoring.  
+  **Options:** On, Off  
+  **Default:** Off  
 </details>
 
 <details>
-<summary>traceroute Timeout</summary>
-Time in seconds to wait before traceroute requests time out.  
-Default: `1 second`
+  <summary><strong>Traceroute Timeout</strong></summary>
+
+  &nbsp;&nbsp;Timeout in seconds before a traceroute request is considered failed.  
+  **Type:** Number (seconds)  
+  **Default:** 1 second  
 </details>
 
 <details>
-<summary>Log Path</summary>
-File path where application logs are saved.  
-Default: `./app.log`
+  <summary><strong>Log Path</strong></summary>
+
+  &nbsp;&nbsp;File path where application logs are saved.  
+  **Default:** ./app.log  
 </details>
 
 <details>
-<summary>Interface Option</summary>
-Network interface used for capturing packets. If set to `Auto`, the program uses the default interface.  
-Default: `Auto`
+  <summary><strong>Interface Option</strong></summary>
+
+  &nbsp;&nbsp;Network interface used for packet capturing. If set to Auto, the app will use the system’s default interface.  
+  **Default:** Auto  
 </details>
 
 <details>
-<summary>IP Filter</summary>
-Filter rules to limit the traffic captured.  
-Default: `(ip and (tcp or udp or icmp)) and not dst net 10.0.0.0/8 and not dst net 172.16.0.0/12 and not dst net 192.168.0.0/16 and not dst net 224.0.0.0/4 and not dst net 240.0.0.0/4` (Tracks outgoing TCP/UDP/ICMP IP packets excluding IPs in private, multicast, and reserved ranges.)
+  <summary><strong>IP Filter</strong></summary>
+
+  &nbsp;&nbsp;Filter expression for limiting captured traffic.  
+  &nbsp;&nbsp;**Default:**  
+  &nbsp;&nbsp;&nbsp;&nbsp;(ip and (tcp or udp or icmp)) and not dst net 10.0.0.0/8 and not dst net 172.16.0.0/12 and not dst net 192.168.0.0/16 and not dst net 224.0.0.0/4 and not dst net 240.0.0.0/4  
+  
+  &nbsp;&nbsp;This filter tracks outgoing TCP, UDP, and ICMP IP packets, excluding private, multicast, and reserved IP ranges.  
 </details>
 
 <details>
-<summary>Lookup Mode</summary>
-Method used for IP lookups. Options: `Auto`, `DB` (database), or `API`. If `Auto`, the app tries the DB before the API.  
-Default: `API`
+  <summary><strong>Lookup Mode</strong></summary>
+
+  &nbsp;&nbsp;Determines how IP lookups are performed.  
+  &nbsp;&nbsp;**Options:**  
+  &nbsp;&nbsp;- Auto — tries the database first, then fallbacks to the API  
+  &nbsp;&nbsp;- DB — uses only the local database  
+  &nbsp;&nbsp;- API — uses only the external API  
+  
+  &nbsp;&nbsp;**Default:** Auto  
 </details>
 
 <details>
-<summary>Active Theme</summary>
-Current UI theme (e.g., `Auto`, `light`, or `dark`).  
-Default: `Auto`
+  <summary><strong>Active Theme</strong></summary>
+
+  &nbsp;&nbsp;User interface theme. When set to Auto, the app follows system preferences.  
+  &nbsp;&nbsp;**Options:** Auto, Light, Dark  
+  &nbsp;&nbsp;**Default:** Auto  
 </details>
 
 <details>
-<summary>Max Hops</summary>
-Maximum number of hops traceroute will follow.  
-Default: `15`
+  <summary><strong>Max Hops</strong></summary>
+
+  &nbsp;&nbsp;Maximum number of hops that traceroute will follow before stopping.  
+  &nbsp;&nbsp;**Type:** Number  
+  &nbsp;&nbsp;**Default:** 15  
+</details>
+
+<details>
+  <summary><strong>WebSocket Port</strong></summary>
+
+  &nbsp;&nbsp;Port number the WebSocket server listens on.  
+  &nbsp;&nbsp;**Default:** 9002  
 </details>
 
 ---
@@ -200,7 +231,7 @@ Default: `15`
 ## Acknowledgments
 
 - High-performance packet sniffing with [libpcap](https://github.com/the-tcpdump-group/libpcap), [WinPcap](https://www.winpcap.org/), and [libtins](https://libtins.github.io)  
-- Utilised a Unix traceroute implementation, `[traceroute](https://github.com/imdibr/traceroute)` by [imdibr](https://github.com/imdibr), applying debugging and modifications
+- Utilised a Unix traceroute implementation, [traceroute](https://github.com/imdibr/traceroute) by [imdibr](https://github.com/imdibr), applying debugging and modifications
 - IP geolocation data provided by [ip-api.com](http://ip-api.com)  
 - Inspired by network tools like Wireshark
 

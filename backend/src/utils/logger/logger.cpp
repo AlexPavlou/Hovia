@@ -8,8 +8,24 @@
 
 std::shared_ptr<Logger> LOGGER;
 
-Logger::Logger(std::shared_ptr<Settings>& pSettings)
-    : m_pSettings(std::move(pSettings)) {}
+Logger& Logger::getInstance(const std::shared_ptr<Settings> pSettings) {
+    static Logger instance;
+    static bool initialised = false;
+    if (!initialised) {
+        if (!pSettings) {
+            throw std::runtime_error(
+                "Logger must be initialised with valid Settings on first use.");
+        }
+        instance.m_pSettings = std::move(pSettings);
+        initialised = true;
+    }
+    return instance;
+}
+
+Logger& Logger::getInstance() {
+    static Logger instance;
+    return instance;
+}
 
 std::string Logger::getCurrentTimestamp() const {
     auto now = std::chrono::system_clock::now();
@@ -20,22 +36,30 @@ std::string Logger::getCurrentTimestamp() const {
     return ss.str();
 }
 
-void Logger::logData(const std::string& data) {
-    std::lock_guard<std::mutex> lock(m_logMutex);
-    std::ofstream ofs(m_pSettings->getLogPath(), std::ios::app);
-    if (!ofs)
-        return;  // silently fail if file can't open
-
-    ofs << "[" << getCurrentTimestamp() << "] " << data << "\n";
+std::string Logger::levelToString(const LogLevel level) {
+    switch (level) {
+        case DEBUG:
+            return "DEBUG";
+        case INFO:
+            return "INFO";
+        case WARNING:
+            return "WARNING";
+        case ERROR:
+            return "ERROR";
+        case CRITICAL:
+            return "CRITICAL";
+        default:
+            return "UNKNOWN";
+    }
 }
 
-void Logger::logError(const std::string& context,
-                      const std::string& message) const {
+void Logger::log(const LogLevel level, const std::string& functionName,
+                 const std::string& message) const {
     std::lock_guard<std::mutex> lock(m_logMutex);
     std::ofstream ofs(m_pSettings->getLogPath(), std::ios::app);
     if (!ofs)
         return;
 
-    ofs << "[" << getCurrentTimestamp() << "] " << "[ERROR] [" << context
-        << "] " << message << "\n";
+    ofs << "[" << getCurrentTimestamp() << "] " << "[" << levelToString(level)
+        << "] [" << functionName << "()]: " << message << "\n";
 }

@@ -137,7 +137,6 @@ void ApiServer::setupHttp(crow::SimpleApp& app) {
             res["hasAnimation"] = m_ipTracker->pSettings->hasAnimation();
             res["hasVerbose"] = m_ipTracker->pSettings->hasVerbose();
 
-            res["HTTPPort"] = m_ipTracker->pSettings->getHTTP();
             res["WebsocketPort"] = m_ipTracker->pSettings->getWebsocket();
 
             crow::response response{res};
@@ -211,8 +210,6 @@ void ApiServer::setupHttp(crow::SimpleApp& app) {
 
             if (body.has("hasVerbose"))
                 m_ipTracker->pSettings->setVerbose(body["hasVerbose"].b());
-            if (body.has("HTTPPort"))
-                m_ipTracker->pSettings->setHTTP(body["HTTPPort"].i());
 
             if (body.has("WebsocketPort"))
                 m_ipTracker->pSettings->setWebsocket(body["WebsocketPort"].i());
@@ -229,10 +226,13 @@ void ApiServer::startAPI() {
     m_running.store(true);
 
     // HTTP server thread
+    if (m_ipTracker->pSettings->hasVerbose())
+        Logger::getInstance().log(LogLevel::INFO, __func__,
+                                  "Initialising HTTP API at port 8080");
     m_httpThread = std::thread([this]() {
         crow::SimpleApp app;
         setupHttp(app);
-        app.port(m_ipTracker->pSettings->getHTTP()).concurrency(2).run();
+        app.port(8080).concurrency(1).run();
     });
 
     // start websocket server listening on the given port
@@ -240,19 +240,26 @@ void ApiServer::startAPI() {
     uint16_t ws_port = m_ipTracker->pSettings->getWebsocket();
     m_server.listen(ws_port, ec);
     if (ec) {
-        LOGGER->logError("startAPI()",
-                         "WebSocket server listen error:" + ec.message());
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "Websocket server listen error:" +
+                                      ec.message());
         return;
     }
 
     m_server.set_access_channels(websocketpp::log::alevel::all);
     m_server.set_error_channels(websocketpp::log::elevel::all);
 
-    // LOGGER->logData("Starting WS server on port " + ws_port);
+    if (m_ipTracker->pSettings->hasVerbose())
+        Logger::getInstance().log(LogLevel::INFO, __func__,
+                                  "Starting WS server on port " +
+                                      std::to_string(ws_port));
 
     m_server.start_accept();
 
-    std::cout << "WS server started and accepting connections" << std::endl;
+    if (m_ipTracker->pSettings->hasVerbose())
+        Logger::getInstance().log(
+            LogLevel::INFO, __func__,
+            "WS server started and accepting connections");
 
     // WebSocket message sending thread
     m_sendThread = std::thread(&ApiServer::sendLoop, this);
@@ -266,16 +273,23 @@ void ApiServer::stopAPI() {
         return;  // prevent double stop
 
     try {
+        if (m_ipTracker->pSettings->hasVerbose())
+            Logger::getInstance().log(
+                LogLevel::INFO, __func__,
+                "Attempting to stop the webSocket server thread");
         if (m_server.is_listening())
             m_server.stop_listening();
 
         m_server.stop();
 
         m_server.get_io_service().stop();
-
     } catch (const std::exception& e) {
-        std::cerr << "Stop error: " << e.what() << std::endl;
+        Logger::getInstance().log(LogLevel::ERROR, __func__, e.what());
     }
+
+    if (m_ipTracker->pSettings->hasVerbose())
+        Logger::getInstance().log(LogLevel::INFO, __func__,
+                                  "Attempting to join all API threads");
 
     if (m_sendThread.joinable())
         m_sendThread.join();
@@ -295,10 +309,15 @@ void ApiServer::sendResult(const traceResult& result) {
     std::string msg = j.dump();
 
     try {
+        if (m_ipTracker->pSettings->hasVerbose())
+            Logger::getInstance().log(LogLevel::INFO, __func__,
+                                      "Sent message: '" + msg +
+                                          "' through websocket");
         m_server.send(m_hdl, msg, websocketpp::frame::opcode::text);
     } catch (const websocketpp::exception& e) {
-        LOGGER->logError("sendResult()",
-                         std::string("WebSocket send error: ") + e.what());
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "Websocket send error: " +
+                                      std::string(e.what()));
     }
 }
 
@@ -314,13 +333,21 @@ void ApiServer::sendLoop() {
                     std::chrono::milliseconds(50));  // prevent busy wait
                 continue;
             }
+            if (m_ipTracker->pSettings->hasVerbose())
+                Logger::getInstance().log(LogLevel::INFO, __func__,
+                                          "Dequeued '" +
+                                              std::string(tr.dest_info.ip) +
+                                              "' from the result queue");
+
             if (!m_hdl.expired())
                 sendResult(tr);
         }
     } catch (const std::exception& e) {
-        LOGGER->logError("sendLoop()",
-                         std::string("Unexpected exception: ") + e.what());
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  std::string("Unexpected exception: ") +
+                                      e.what());
     } catch (...) {
-        LOGGER->logError("secondLoop()", "Unknown exception caught");
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "Unknown exception caught");
     }
 }

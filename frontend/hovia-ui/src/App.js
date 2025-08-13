@@ -22,7 +22,7 @@ function App() {
 
     // WebSocket connection with batching and capped traceResults length to 200
     useEffect(() => {
-        if (!settings) return;
+        if (!settings || !settings.WebsocketPort) return;
 
         const buffer = [];
         let flushTimeout;
@@ -44,7 +44,8 @@ function App() {
         };
 
         const connect = () => {
-            const socket = new WebSocket('ws://localhost:9002');
+            const socketUrl = `ws://localhost:${settings.WebsocketPort}`;
+            const socket = new WebSocket(socketUrl);
             ws.current = socket;
 
             socket.onopen = () => {

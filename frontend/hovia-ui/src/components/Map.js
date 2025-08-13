@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
-import { geoGraticule } from 'd3-geo';
+import { geoGraticule, geoDistance } from 'd3-geo';
 
 const GEO_URL =
     'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
@@ -185,7 +185,7 @@ export default function Map({
             dragRef.current.lastX = e.clientX;
             dragRef.current.lastY = e.clientY;
 
-            const sensitivity = 0.3; // slower pan
+            const sensitivity = 0.2; // slower pan
 
             setRotation(([lambda, phi]) => {
                 let nl = lambda + dx * sensitivity;
@@ -330,7 +330,32 @@ export default function Map({
     };
 
     const arcsPaths = [];
+    const center = [-rotation[0], -rotation[1]];
+
     traceResults.forEach((trace) => {
+        const coords = [];
+        trace.hops.forEach((hop) => {
+            const loc = hopLocations[hop.hopIP];
+            if (loc) coords.push({ lat: loc.latitude, lon: loc.longitude });
+        });
+        if (trace.dest_info.latitude !== 0 && trace.dest_info.longitude !== 0) {
+            coords.push({
+                lat: trace.dest_info.latitude,
+                lon: trace.dest_info.longitude,
+            });
+        }
+        for (let i = 0; i < coords.length - 1; i++) {
+            const start = coords[i];
+            const end = coords[i + 1];
+            const startDist = geoDistance(center, [start.lon, start.lat]);
+            const endDist = geoDistance(center, [end.lon, end.lat]);
+            if (startDist <= Math.PI / 2 && endDist <= Math.PI / 2) {
+                arcsPaths.push(createArcPath(start, end));
+            }
+        }
+    });
+
+    /*traceResults.forEach((trace) => {
         const coords = [];
         trace.hops.forEach((hop) => {
             const loc = hopLocations[hop.hopIP];
@@ -346,7 +371,7 @@ export default function Map({
             if (coords[i] && coords[i + 1])
                 arcsPaths.push(createArcPath(coords[i], coords[i + 1]));
         }
-    });
+    });*/
 
     const colors = {
         light: {
@@ -382,10 +407,19 @@ export default function Map({
     const SvgMarker = ({ marker }) => {
         const coords = projectPoint(marker.lat, marker.lon);
         if (!coords) return null;
+
+        const center = [-rotation[0], -rotation[1]];
+        const point = [marker.lon, marker.lat];
+        const distance = geoDistance(center, point);
+        if (distance > Math.PI / 2) return; // do not show tooltip if on back side
+
         const [x, y] = coords;
 
         const handleMouseEnter = () => {
             if (isDraggingRef.current) return;
+
+            if (geoDistance(center, point) > Math.PI / 2) return;
+
             setTooltip({
                 visible: true,
                 x: x + 8,
@@ -578,7 +612,7 @@ export default function Map({
                         fontFamily:
                             'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
                         boxShadow: '0 0 10px rgba(0,0,0,0.15)',
-                        transition: 'opacity 0.2s ease',
+                        transition: 'opacity 0.4s ease',
                         opacity: tooltip.visible ? 1 : 0,
                     }}
                 >

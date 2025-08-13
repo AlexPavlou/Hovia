@@ -61,30 +61,38 @@ destInfo Lookup::lookUpAPI(const std::string& ip) {
     return info;
 }
 
+// Converts a uint32_t IP (in host byte order) to dotted-decimal string
+std::string ipToStr(uint32_t ip) {
+    in_addr addr{};
+    addr.s_addr = htonl(ip);  // Convert to network byte order
+    char ipStr[INET_ADDRSTRLEN] = {};
+
+    // Convert IPv4 address to string
+    const char* res = inet_ntop(AF_INET, &addr, ipStr, sizeof(ipStr));
+    if (res == nullptr) {
+        return "";
+    }
+
+    return std::string(ipStr);
+}
+
 traceResult Lookup::processIp(const uint32_t& ip) {
     traceResult result;
-    in_addr addr{};
-    addr.s_addr = htonl(ip);
-    char ipStr[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &addr, ipStr, sizeof(ipStr));
-    result.timestamp = LOGGER->getCurrentTimestamp();
+    std::string ipStr = ipToStr(ip);
+    result.timestamp = Logger::getInstance().getCurrentTimestamp();
     result.hops = traceroute(ipStr, m_ipTracker->pSettings->getMaxHops(),
                              m_ipTracker->pSettings->getTimeout());
-    result.dest_info = lookUpAPI(ipStr);
 
-    /*if (ipTracker->settings->lookupMode.load() == LookupMode::AUTO) {
-        if (!std::filesystem::exists("db.db")) {
-            result.dest_info = lookUpAPI(ipStr);
-        }
-    } else if (ipTracker->settings->lookupMode.load() == LookupMode::API_ONLY) {
+    if (m_ipTracker->pSettings->getLookupMode() == LookupMode::API) {
         result.dest_info = lookUpAPI(ipStr);
     } else {
         if (!std::filesystem::exists("db.db")) {
-            LOGGER->logError("DB was not found. Process is exited.", "");
+            Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                      "Db was not found, process exited.");
             return {};
         }
-        //result.dest_info = lookUpDB(ipStr);
-    }*/
+        // result.dest_info = lookUpDB(ipStr);
+    }
 
     return result;
 }
@@ -95,8 +103,18 @@ void Lookup::lookupLoop() {
     while (m_running.load()) {
         if (!m_ipTracker->dequeueIp(ip))
             break;
+        if (m_ipTracker->pSettings->hasVerbose())
+            Logger::getInstance().log(
+                LogLevel::INFO, __func__,
+                "Dequeued '" + ipToStr(ip) +
+                    "' IP from the IP Queue and began processing it");
+
         newResult = processIp(ip);
         m_ipTracker->enqueueResult(newResult);
+        if (m_ipTracker->pSettings->hasVerbose())
+            Logger::getInstance().log(LogLevel::INFO, __func__,
+                                      "Pushed results of '" + ipToStr(ip) +
+                                          "' IP from the Results Queue");
     }
 }
 
@@ -106,12 +124,19 @@ void Lookup::startLookup(size_t numThreads) {
     m_lookupThreads.clear();
     // generate numThreads threads that run lookupLoop
     for (size_t i = 0; i < numThreads; ++i) {
+        if (m_ipTracker->pSettings->hasVerbose())
+            Logger::getInstance().log(LogLevel::INFO, __func__,
+                                      "Initialized lookup thread no. #" +
+                                          std::to_string(i));
         m_lookupThreads.emplace_back(&Lookup::lookupLoop, this);
     }
 }
 
 void Lookup::stopLookup() {
     m_running.store(false);
+    if (m_ipTracker->pSettings->hasVerbose())
+        Logger::getInstance().log(LogLevel::INFO, __func__,
+                                  "Attempting to join all lookup threads");
     for (auto& t : m_lookupThreads) {
         // try and join each of the threads in m_lookupThreads
         if (t.joinable())

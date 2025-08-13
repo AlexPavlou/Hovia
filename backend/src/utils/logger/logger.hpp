@@ -8,8 +8,8 @@ enum LogLevel { DEBUG, INFO, WARNING, ERROR, CRITICAL };
 
 class Logger {
     public:
-        static Logger& getInstance();
         static Logger& getInstance(const std::shared_ptr<Settings> pSettings);
+        static Logger& getInstance();
         void log(const LogLevel level, const std::string& functionName,
                  const std::string& message) const;
         std::string getCurrentTimestamp() const;

@@ -134,7 +134,8 @@ void ApiServer::setupHttp(crow::SimpleApp& app) {
             res["timeout"] = m_ipTracker->pSettings->getTimeout();
 
             // Boolean flags
-            res["hasAnimation"] = m_ipTracker->pSettings->hasAnimation();
+            res["animationToggle"] =
+                m_ipTracker->pSettings->getAnimationToggle();
             res["hasVerbose"] = m_ipTracker->pSettings->hasVerbose();
 
             res["WebsocketPort"] = m_ipTracker->pSettings->getWebsocket();
@@ -205,8 +206,9 @@ void ApiServer::setupHttp(crow::SimpleApp& app) {
             if (body.has("timeout"))
                 m_ipTracker->pSettings->setTimeout(body["timeout"].i());
 
-            if (body.has("hasAnimation"))
-                m_ipTracker->pSettings->setAnimation(body["hasAnimation"].b());
+            if (body.has("animationToggle"))
+                m_ipTracker->pSettings->setAnimationToggle(
+                    body["animationToggle"].b());
 
             if (body.has("hasVerbose"))
                 m_ipTracker->pSettings->setVerbose(body["hasVerbose"].b());
@@ -246,8 +248,9 @@ void ApiServer::startAPI() {
         return;
     }
 
-    m_server.set_access_channels(websocketpp::log::alevel::all);
-    m_server.set_error_channels(websocketpp::log::elevel::all);
+    m_server.set_access_channels(websocketpp::log::alevel::none);
+    m_server.set_error_channels(websocketpp::log::elevel::warn |
+                                websocketpp::log::elevel::rerror);
 
     if (m_ipTracker->pSettings->hasVerbose())
         Logger::getInstance().log(LogLevel::INFO, __func__,
@@ -309,6 +312,7 @@ void ApiServer::sendResult(const traceResult& result) {
     std::string msg = j.dump();
 
     try {
+        std::cout << msg;
         if (m_ipTracker->pSettings->hasVerbose())
             Logger::getInstance().log(LogLevel::INFO, __func__,
                                       "Sent message: '" + msg +

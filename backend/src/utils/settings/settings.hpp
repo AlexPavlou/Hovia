@@ -6,23 +6,37 @@
 #include <nlohmann/json.hpp>
 #include <cstdint>
 
+/* Settings:
+ * 1. Traceroute timeout
+ * 2. Animation toggle
+ * 3. Verbose logging
+ * 4. Log path
+ * 5. Interface option
+ * 6. IP filter
+ * 7. Lookup mode
+ * 8. Language
+ * 9. Theme
+ * 10. Max hops
+ * 11. Websocket port
+ */
+
 enum class LookupMode { AUTO, DB, API };
 enum class ActiveLanguage { ENGLISH, SPANISH, GREEK };
 enum class ActiveTheme { AUTO, DARK, LIGHT };
 
 struct Settings {
     private:
-        std::atomic<uint16_t> m_WebsocketPort{9002};
         std::atomic<uint8_t> m_timeout{1};
 
-        std::atomic<bool> m_hasAnimation{false};
+        std::atomic<bool> m_animationToggle{
+            true};  // TRUE: animations on, FALSE: animations OFF
 
         std::atomic<bool> m_hasVerbose{false};
 
         std::string m_logPath = "app.log";
         mutable std::mutex m_logPathMutex;
 
-        std::string m_interfaceOption = "Auto";
+        std::string m_interfaceOption = "AUTO";
         mutable std::mutex m_interfaceMutex;
 
         std::string m_ipFilter =
@@ -36,6 +50,7 @@ struct Settings {
         std::atomic<ActiveTheme> m_activeTheme = ActiveTheme::AUTO;
 
         std::atomic<int> m_maxHops = 15;
+        std::atomic<uint16_t> m_WebsocketPort{9002};
 
     public:
         static std::shared_ptr<Settings> loadFromFile();
@@ -47,8 +62,8 @@ struct Settings {
         uint8_t getTimeout() const;
         void setTimeout(uint8_t newTimeout);
 
-        bool hasAnimation() const;
-        void setAnimation(bool newAnimationToggle);
+        bool getAnimationToggle() const;
+        void setAnimationToggle(bool newAnimationToggle);
 
         bool hasVerbose() const;
         void setVerbose(bool newVerboseLogging);

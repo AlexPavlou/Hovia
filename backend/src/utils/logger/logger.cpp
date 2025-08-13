@@ -22,10 +22,7 @@ Logger& Logger::getInstance(const std::shared_ptr<Settings> pSettings) {
     return instance;
 }
 
-Logger& Logger::getInstance() {
-    static Logger instance;
-    return instance;
-}
+Logger& Logger::getInstance() { return getInstance(nullptr); }
 
 std::string Logger::getCurrentTimestamp() const {
     auto now = std::chrono::system_clock::now();

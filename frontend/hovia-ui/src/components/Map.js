@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { geoGraticule, geoDistance } from 'd3-geo';
+import translations from '../i18n';
 
 const GEO_URL =
     'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
@@ -12,10 +13,13 @@ export default function Map({
     traceResults = [],
     darkMode = false,
     userLocationOverride = null,
+    animationToggle = true,
+    activeLanguage = 'ENGLISH',
 }) {
     const isDraggingRef = useRef(false);
     const containerRef = useRef(null);
     const svgRef = useRef(null);
+    const t = translations[activeLanguage] || translations.ENGLISH;
 
     const [dimensions, setDimensions] = useState({ width: 800, height: 800 });
     const [worldData, setWorldData] = useState(null);
@@ -131,6 +135,7 @@ export default function Map({
 
     // Momentum rotation animation disabled during drag
     useEffect(() => {
+        if (!animationToggle) return; // Skip animation if the animation toggle is turned off
         const friction = 0.93;
         let animationFrame;
 
@@ -274,7 +279,7 @@ export default function Map({
               lon: userLocation.lon,
               color: darkMode ? '#76ff03' : '#228b22',
               size: 6,
-              label: 'Home (Your Location)',
+              label: t.map.homeLabel,
               id: 'home',
           }
         : null;
@@ -289,7 +294,7 @@ export default function Map({
                     lon: loc.longitude,
                     color: darkMode ? '#2196f3' : '#1565c0',
                     size: 4,
-                    label: `Hop IP: ${hop.hopIP}\nLatency: ${hop.latency} ms`,
+                    label: `${t.map.hopIP}: ${hop.hopIP}\n${t.map.latency}: ${hop.latency} ms`,
                     id: `hop-${i}-${idx}`,
                 });
             }
@@ -305,7 +310,7 @@ export default function Map({
                 lon: d.longitude,
                 color: darkMode ? '#ff7043' : '#e64a19',
                 size: 5,
-                label: `Destination IP: ${d.ip}\nCountry: ${d.country}\nRegion: ${d.region}\nISP: ${d.isp}`,
+                label: `${t.map.destinationIP}: ${d.ip}\n${t.map.country}: ${d.country}\n${t.map.region}: ${d.region}\n${t.map.isp}: ${d.isp}`,
                 id: `dest-${i}`,
             });
         }
@@ -318,16 +323,33 @@ export default function Map({
     ];
 
     // Arc paths
-    const createArcPath = (start, end) => {
-        const interpolate = d3.geoInterpolate(
+    function createArcPath(start, end, center) {
+        const interpolator = d3.geoInterpolate(
             [start.lon, start.lat],
             [end.lon, end.lat],
         );
-        const points = d3.range(0, 1.01, 0.02).map(interpolate);
-        const pixelPoints = points.map((p) => projection(p)).filter(Boolean);
-        if (pixelPoints.length < 2) return '';
-        return 'M' + pixelPoints.map((p) => p.join(',')).join(' L');
-    };
+        const numSamples = 30;
+        let visiblePoints = [];
+        let pathSegments = [];
+
+        for (let i = 0; i <= numSamples; i++) {
+            const point = interpolator(i / numSamples);
+            const dist = d3.geoDistance(center, point);
+            if (dist <= Math.PI / 2) {
+                visiblePoints.push(projection(point));
+            } else {
+                if (visiblePoints.length > 0) {
+                    pathSegments.push(visiblePoints);
+                    visiblePoints = [];
+                }
+            }
+        }
+        if (visiblePoints.length > 0) pathSegments.push(visiblePoints);
+
+        return pathSegments
+            .filter((segment) => segment.length >= 2)
+            .map((segment) => 'M' + segment.map((p) => p.join(',')).join(' L'));
+    }
 
     const arcsPaths = [];
     const center = [-rotation[0], -rotation[1]];
@@ -347,31 +369,11 @@ export default function Map({
         for (let i = 0; i < coords.length - 1; i++) {
             const start = coords[i];
             const end = coords[i + 1];
-            const startDist = geoDistance(center, [start.lon, start.lat]);
-            const endDist = geoDistance(center, [end.lon, end.lat]);
-            if (startDist <= Math.PI / 2 && endDist <= Math.PI / 2) {
-                arcsPaths.push(createArcPath(start, end));
-            }
+
+            const segments = createArcPath(start, end, center);
+            arcsPaths.push(...segments);
         }
     });
-
-    /*traceResults.forEach((trace) => {
-        const coords = [];
-        trace.hops.forEach((hop) => {
-            const loc = hopLocations[hop.hopIP];
-            if (loc) coords.push({ lat: loc.latitude, lon: loc.longitude });
-        });
-        if (trace.dest_info.latitude !== 0 && trace.dest_info.longitude !== 0) {
-            coords.push({
-                lat: trace.dest_info.latitude,
-                lon: trace.dest_info.longitude,
-            });
-        }
-        for (let i = 0; i < coords.length - 1; i++) {
-            if (coords[i] && coords[i + 1])
-                arcsPaths.push(createArcPath(coords[i], coords[i + 1]));
-        }
-    });*/
 
     const colors = {
         light: {
@@ -470,6 +472,11 @@ export default function Map({
             }}
         >
             <svg
+                role="img"
+                aria-label={
+                    t.map.ariaLabel ||
+                    'Interactive globe map showing network routes'
+                }
                 ref={svgRef}
                 shapeRendering="geometricPrecision"
                 viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
@@ -567,7 +574,13 @@ export default function Map({
                             strokeLinejoin="round"
                             strokeLinecap="round"
                             pointerEvents="none"
-                        />
+                            tabIndex={-1}
+                            aria-hidden="true"
+                        >
+                            <title>
+                                {feature.properties?.name || 'Country'}
+                            </title>
+                        </path>
                     ))}
 
                 {/* Arcs */}

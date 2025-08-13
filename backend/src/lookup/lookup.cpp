@@ -17,7 +17,7 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     return size * nmemb;
 }
 
-destInfo Lookup::lookUpAPI(const std::string& ip) {
+destInfo Lookup::lookupAPI(const std::string& ip) {
     destInfo info{};
     std::string url =
         "http://ip-api.com/json/" + ip +
@@ -84,14 +84,20 @@ traceResult Lookup::processIp(const uint32_t& ip) {
                              m_ipTracker->pSettings->getTimeout());
 
     if (m_ipTracker->pSettings->getLookupMode() == LookupMode::API) {
-        result.dest_info = lookUpAPI(ipStr);
+        if (m_ipTracker->pSettings->hasVerbose())
+            Logger::getInstance().log(LogLevel::INFO, __func__,
+                                      "Calling lookupAPI()");
+        result.dest_info = lookupAPI(ipStr);
     } else {
         if (!std::filesystem::exists("db.db")) {
             Logger::getInstance().log(LogLevel::ERROR, __func__,
                                       "Db was not found, process exited.");
             return {};
         }
-        // result.dest_info = lookUpDB(ipStr);
+        if (m_ipTracker->pSettings->hasVerbose())
+            Logger::getInstance().log(LogLevel::INFO, __func__,
+                                      "Calling lookupDB()");
+        // result.dest_info = lookupDB(ipStr);
     }
 
     return result;
@@ -104,10 +110,9 @@ void Lookup::lookupLoop() {
         if (!m_ipTracker->dequeueIp(ip))
             break;
         if (m_ipTracker->pSettings->hasVerbose())
-            Logger::getInstance().log(
-                LogLevel::INFO, __func__,
-                "Dequeued '" + ipToStr(ip) +
-                    "' IP from the IP Queue and began processing it");
+            Logger::getInstance().log(LogLevel::INFO, __func__,
+                                      "Dequeued '" + ipToStr(ip) +
+                                          "' IP from the IP Queue");
 
         newResult = processIp(ip);
         m_ipTracker->enqueueResult(newResult);

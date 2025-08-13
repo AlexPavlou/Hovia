@@ -11,7 +11,7 @@ class IpTracker;
 class Lookup {
     public:
         Lookup(IpTracker* ipTracker);
-        destInfo lookUpAPI(const std::string& ip);
+        destInfo lookupAPI(const std::string& ip);
         traceResult processIp(const uint32_t& ip);
         void lookupLoop();
         void startLookup(size_t numThreads = 2);

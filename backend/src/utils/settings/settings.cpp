@@ -12,20 +12,14 @@ constexpr char SETTINGS_FILE[] = "config.json";
 
 using json = nlohmann::json;
 
-uint16_t Settings::getWebsocket() const { return m_WebsocketPort.load(); }
-
-void Settings::setWebsocket(uint16_t newWebsocket) {
-    m_WebsocketPort.store(newWebsocket);
-}
-
 uint8_t Settings::getTimeout() const { return m_timeout.load(); }
 
 void Settings::setTimeout(uint8_t newTimeout) { m_timeout.store(newTimeout); }
 
-bool Settings::hasAnimation() const { return m_hasAnimation.load(); }
+bool Settings::getAnimationToggle() const { return m_animationToggle.load(); }
 
-void Settings::setAnimation(bool newAnimationToggle) {
-    m_hasAnimation.store(newAnimationToggle);
+void Settings::setAnimationToggle(bool newAnimationToggle) {
+    m_animationToggle.store(newAnimationToggle);
 }
 
 bool Settings::hasVerbose() const { return m_hasVerbose.load(); }
@@ -64,10 +58,6 @@ void Settings::setFilter(const std::string& newFilter) {
     m_ipFilter = newFilter;
 }
 
-int Settings::getMaxHops() const { return m_maxHops.load(); }
-
-void Settings::setMaxHops(const int val) { m_maxHops.store(val); }
-
 LookupMode Settings::getLookupMode() const { return m_lookupMode.load(); }
 
 void Settings::setLookupMode(LookupMode mode) { m_lookupMode.store(mode); }
@@ -82,6 +72,15 @@ ActiveTheme Settings::getTheme() const { return m_activeTheme.load(); }
 
 void Settings::setTheme(ActiveTheme mode) { m_activeTheme.store(mode); }
 
+int Settings::getMaxHops() const { return m_maxHops.load(); }
+
+void Settings::setMaxHops(const int val) { m_maxHops.store(val); }
+
+uint16_t Settings::getWebsocket() const { return m_WebsocketPort.load(); }
+
+void Settings::setWebsocket(uint16_t newWebsocket) {
+    m_WebsocketPort.store(newWebsocket);
+}
 // This function receives a path and begins to parse said json file, setting up
 // all of the app's settings atomically and setting up mutexes for all string
 // variables (logPath, interfaceToUse and pcapFilter)
@@ -100,10 +99,8 @@ std::shared_ptr<Settings> Settings::loadFromFile() {
         throw;
     }
 
-    std::cout << "Attempting to read from " << configFilePath.string() << '\n';
     std::ifstream in(configFilePath);
     if (in) {
-        std::cout << "WE ARE IN!!\n";
         try {
             json j;
             in >> j;
@@ -115,7 +112,7 @@ std::shared_ptr<Settings> Settings::loadFromFile() {
             }
             {
                 std::lock_guard<std::mutex> lock(s->m_interfaceMutex);
-                s->m_interfaceOption = j.value("interfaceOption", "Auto");
+                s->m_interfaceOption = j.value("interfaceOption", "AUTO");
             }
             {
                 std::lock_guard<std::mutex> lock(s->m_ipFilterMutex);
@@ -128,13 +125,13 @@ std::shared_ptr<Settings> Settings::loadFromFile() {
             }
 
             // Enum LookupMode
-            std::string lookupModeStr = j.value("lookupMode", "AUTO");
+            std::string lookupModeStr = j.value("lookupMode", "API");
             if (lookupModeStr == "DB")
                 s->m_lookupMode.store(LookupMode::DB);
-            else if (lookupModeStr == "API" || lookupModeStr == "API_ONLY")
+            else if (lookupModeStr == "API" || lookupModeStr == "API")
                 s->m_lookupMode.store(LookupMode::API);
             else
-                s->m_lookupMode.store(LookupMode::AUTO);
+                s->m_lookupMode.store(LookupMode::API);
 
             // Enum ActiveTheme
             std::string themeStr = j.value("activeTheme", "AUTO");
@@ -160,7 +157,7 @@ std::shared_ptr<Settings> Settings::loadFromFile() {
             s->m_maxHops.store(j.value("maxHops", 15));
             s->m_timeout.store(j.value("timeout", 1));
 
-            s->m_hasAnimation.store(j.value("hasAnimation", false));
+            s->m_animationToggle.store(j.value("animationToggle", true));
             s->m_hasVerbose.store(j.value("hasVerbose", false));
 
             s->m_WebsocketPort.store(j.value("WebsocketPort", 9002));
@@ -173,6 +170,10 @@ std::shared_ptr<Settings> Settings::loadFromFile() {
         }
     }
 
+    if (s->hasVerbose())
+        Logger::getInstance().log(LogLevel::INFO, __func__,
+                                  "Loaded settings from: " +
+                                      configFilePath.string());
     return s;
 }
 
@@ -211,10 +212,10 @@ void Settings::saveToFile() {
             j["lookupMode"] = "DB";
             break;
         case LookupMode::API:
-            j["lookupMode"] = "API_ONLY";
+            j["lookupMode"] = "API";
             break;
         default:
-            j["lookupMode"] = "AUTO";
+            j["lookupMode"] = "API";
             break;
     }
 
@@ -248,7 +249,7 @@ void Settings::saveToFile() {
     // Integral and boolean values
     j["maxHops"] = m_maxHops.load();
     j["timeout"] = m_timeout.load();
-    j["hasAnimation"] = m_hasAnimation.load();
+    j["animationToggle"] = m_animationToggle.load();
     j["hasVerbose"] = m_hasVerbose.load();
 
     j["WebsocketPort"] = m_WebsocketPort.load();
@@ -271,4 +272,9 @@ void Settings::saveToFile() {
         throw std::runtime_error("Failed to fully write config file: " +
                                  configFilePath.string());
     }
+
+    if (hasVerbose())
+        Logger::getInstance().log(LogLevel::INFO, __func__,
+                                  "Saved settings to: " +
+                                      configFilePath.string());
 }

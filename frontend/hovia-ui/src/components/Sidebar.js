@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import translations from '../i18n'; // import translations object
 import { Globe, Logs, Settings, Sun, Moon } from 'lucide-react';
 
 const icons = {
@@ -11,7 +12,6 @@ const icons = {
 
 function iconButtonStyle(isDark, isActive, isHover) {
     if (isDark) {
-        //dark theme colours
         const activeColor = '#FFFFFF';
         const inactiveColor = '#616569';
         const hoverColor = '#BEBFC1';
@@ -32,7 +32,6 @@ function iconButtonStyle(isDark, isActive, isHover) {
             justifyContent: 'center',
         };
     } else {
-        // light theme colours
         const activeColor = '#20232A';
         const inactiveColor = '#A0A3A8';
         const hoverColor = '#4A4D53';
@@ -60,10 +59,11 @@ export default function SidebarMinimal({
     isDark,
     toggleDarkMode,
     active,
+    activeLanguage = 'ENGLISH',
 }) {
     const pages = ['map', 'logging', 'settings', 'exit'];
+    const t = translations[activeLanguage] || translations.ENGLISH;
 
-    // Track hover state per button keyed by page
     const [hovered, setHovered] = useState(null);
 
     return (
@@ -71,8 +71,8 @@ export default function SidebarMinimal({
             style={{
                 width: 60,
                 height: '100vh',
-                background: isDark ? '#171C22' : '#FFFFFF', // Dark: nice medium-dark gray, Light: pure white
-                borderRight: `1px solid ${isDark ? '#444' : '#DDD'}`, // Border lighter for dark theme
+                background: isDark ? '#171C22' : '#FFFFFF',
+                borderRight: `1px solid ${isDark ? '#444' : '#DDD'}`,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -94,8 +94,8 @@ export default function SidebarMinimal({
                 }}
             >
                 <img
-                    src={require('../assets/logo.svg').default} // or import logo from path and use {logo}
-                    alt="Logo"
+                    src={require('../assets/logo.svg').default}
+                    alt="logo" // per your request, simple "logo" text
                     style={{
                         maxWidth: '40px',
                         height: 'auto',
@@ -116,19 +116,18 @@ export default function SidebarMinimal({
                 {pages.map((page) => (
                     <button
                         key={page}
-                        aria-label={page}
+                        aria-label={t.pages[page]}
                         onClick={() => onSelect(page)}
                         style={iconButtonStyle(
                             isDark,
                             active === page,
                             hovered === page,
                         )}
-                        title={page.charAt(0).toUpperCase() + page.slice(1)}
+                        title={t.pages[page]}
                         type="button"
                         onMouseEnter={() => setHovered(page)}
                         onMouseLeave={() => setHovered(null)}
                     >
-                        {/* For "exit" page which lacks an icon, show a default or text */}
                         {icons[page] || (
                             <span style={{ fontWeight: 'bold' }}>X</span>
                         )}
@@ -138,7 +137,7 @@ export default function SidebarMinimal({
 
             {/* Bottom: Theme toggle */}
             <button
-                aria-label="Toggle dark mode"
+                aria-label={t.sidebar.toggleDarkMode}
                 onClick={toggleDarkMode}
                 style={{
                     background: 'none',
@@ -148,7 +147,11 @@ export default function SidebarMinimal({
                     padding: 0,
                     transition: 'color 0.3s ease',
                 }}
-                title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                title={
+                    isDark
+                        ? t.sidebar.switchToLightMode
+                        : t.sidebar.switchToDarkMode
+                }
                 type="button"
                 onMouseEnter={(e) =>
                     (e.currentTarget.style.color = isDark ? '#fff' : '#000')

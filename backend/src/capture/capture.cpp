@@ -60,7 +60,7 @@ void Capture::startCapture() {
     std::string interfaceOption = m_ipTracker->pSettings->getInterfaceOption();
     // use the correct network interface depending on settings' saved option
     std::string interface =
-        (interfaceOption == "Auto") ? getDefaultInterface() : interfaceOption;
+        (interfaceOption == "AUTO") ? getDefaultInterface() : interfaceOption;
 
     if (interface.empty())
         return;

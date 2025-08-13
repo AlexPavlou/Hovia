@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Sidebar from './components/Sidebar'; // Your sidebar component
 import Map from './components/Map'; // The SVG globe Map.js we will provide
+import translations from './i18n';
 
 function App() {
     const [settings, setSettings] = useState(null);
@@ -19,6 +20,9 @@ function App() {
             })
             .catch((err) => console.error('Failed to load settings', err));
     }, []);
+
+    const activeLanguage = settings?.activeLanguage ?? 'ENGLISH';
+    const t = translations[activeLanguage] || translations.ENGLISH;
 
     // WebSocket connection with batching and capped traceResults length to 200
     useEffect(() => {
@@ -104,12 +108,18 @@ function App() {
 
     let content = null;
     if (selectedPage === 'map') {
-        content = <Map traceResults={traceResults} darkMode={darkMode} />;
+        content = (
+            <Map
+                traceResults={traceResults}
+                darkMode={darkMode}
+                animationToggle={settings?.animationToggle ?? false}
+                activeLanguage={activeLanguage}
+            />
+        );
     } else if (selectedPage === 'logging') {
-        // Placeholder for logging component
-        content = <div>Logging Page (implement your Logging component)</div>;
+        content = <div>{t.loggingPageTitle}</div>;
     } else {
-        content = <div>Page not found</div>;
+        content = <div>{t.pages.pageNotFound}</div>;
     }
 
     return (
@@ -128,6 +138,7 @@ function App() {
                     toggleDarkMode={toggleDarkMode}
                     onSelect={setSelectedPage}
                     active={selectedPage}
+                    activeLanguage={activeLanguage}
                 />
             </div>
 

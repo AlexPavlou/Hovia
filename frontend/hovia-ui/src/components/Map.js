@@ -14,12 +14,11 @@ export default function Map({
     darkMode = false,
     userLocationOverride = null,
     animationToggle = true,
-    activeLanguage = 'ENGLISH',
+    t,
 }) {
     const isDraggingRef = useRef(false);
     const containerRef = useRef(null);
     const svgRef = useRef(null);
-    const t = translations[activeLanguage] || translations.ENGLISH;
 
     const [dimensions, setDimensions] = useState({ width: 800, height: 800 });
     const [worldData, setWorldData] = useState(null);

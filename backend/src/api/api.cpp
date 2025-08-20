@@ -9,6 +9,37 @@
 
 using json = nlohmann::json;
 
+// Helper to convert crow log levels to the internal logger's LogLevel enum
+LogLevel convertCrowLogLevel(crow::LogLevel lvl) {
+    switch (lvl) {
+        case crow::LogLevel::Debug:
+            return LogLevel::DEBUG;
+        case crow::LogLevel::Info:
+            return LogLevel::INFO;
+        case crow::LogLevel::Warning:
+            return LogLevel::WARNING;
+        case crow::LogLevel::Error:
+            return LogLevel::ERROR;
+        default:
+            return LogLevel::INFO;
+    }
+}
+
+void CrowLogBridge::log(std::string&& line) {
+    Logger::getInstance().log(LogLevel::INFO, "crow", std::move(line));
+}
+
+void CrowLogBridge::log(const std::string& line) {
+    Logger::getInstance().log(LogLevel::INFO, "crow", line);
+}
+
+void CrowLogBridge::log(std::string message, crow::LogLevel level) {
+    Logger::getInstance().log(convertCrowLogLevel(level), "crow",
+                              std::move(message));
+}
+
+CrowLogBridge::~CrowLogBridge() = default;
+
 // JSON serialization for hopInfo struct
 void to_json(json& j, const hopInfo& h) {
     j = json{{"hopIP", std::string(h.hopIP)}, {"latency", h.latency}};
@@ -96,36 +127,33 @@ void ApiServer::setupHttp(crow::SimpleApp& app) {
                     res["lookupMode"] = "API";
                     break;
                 default:
-                    res["lookupMode"] = "AUTO";
+                    res["lookupMode"] = "Auto";
                     break;
             }
 
             // Theme as string
             switch (m_ipTracker->pSettings->getTheme()) {
                 case ActiveTheme::DARK:
-                    res["activeTheme"] = "DARK";
+                    res["activeTheme"] = "Dark";
                     break;
                 case ActiveTheme::LIGHT:
-                    res["activeTheme"] = "LIGHT";
+                    res["activeTheme"] = "Light";
                     break;
                 default:
-                    res["activeTheme"] = "AUTO";
+                    res["activeTheme"] = "Auto";
                     break;
             }
 
             // Language as string
             switch (m_ipTracker->pSettings->getLanguage()) {
-                case ActiveLanguage::ENGLISH:
-                    res["activeLanguage"] = "ENGLISH";
-                    break;
                 case ActiveLanguage::SPANISH:
-                    res["activeLanguage"] = "SPANISH";
+                    res["activeLanguage"] = "Spanish";
                     break;
                 case ActiveLanguage::GREEK:
-                    res["activeLanguage"] = "GREEK";
+                    res["activeLanguage"] = "Greek";
                     break;
                 default:
-                    res["activeLanguage"] = "ENGLISH";
+                    res["activeLanguage"] = "English";
                     break;
             }
 
@@ -177,9 +205,9 @@ void ApiServer::setupHttp(crow::SimpleApp& app) {
 
             if (body.has("activeTheme")) {
                 auto theme = body["activeTheme"].s();
-                if (theme == "DARK")
+                if (theme == "Dark")
                     m_ipTracker->pSettings->setTheme(ActiveTheme::DARK);
-                else if (theme == "LIGHT")
+                else if (theme == "Light")
                     m_ipTracker->pSettings->setTheme(ActiveTheme::LIGHT);
                 else
                     m_ipTracker->pSettings->setTheme(ActiveTheme::AUTO);
@@ -187,13 +215,10 @@ void ApiServer::setupHttp(crow::SimpleApp& app) {
 
             if (body.has("activeLanguage")) {
                 auto lang = body["activeLanguage"].s();
-                if (lang == "ENGLISH")
-                    m_ipTracker->pSettings->setLanguage(
-                        ActiveLanguage::ENGLISH);
-                else if (lang == "SPANISH")
+                if (lang == "Spanish")
                     m_ipTracker->pSettings->setLanguage(
                         ActiveLanguage::SPANISH);
-                else if (lang == "GREEK")
+                else if (lang == "Greeek")
                     m_ipTracker->pSettings->setLanguage(ActiveLanguage::GREEK);
                 else
                     m_ipTracker->pSettings->setLanguage(
@@ -227,6 +252,11 @@ void ApiServer::setupHttp(crow::SimpleApp& app) {
 void ApiServer::startAPI() {
     m_running.store(true);
 
+    // replace default crow logger with bridge to the app's logger
+    // crow takes full ownership of the bridge's pointer and manages its
+    // lifetime
+    crow::logger::setHandler(new CrowLogBridge());
+
     // HTTP server thread
     if (m_ipTracker->pSettings->hasVerbose())
         Logger::getInstance().log(LogLevel::INFO, __func__,
@@ -248,9 +278,15 @@ void ApiServer::startAPI() {
         return;
     }
 
-    m_server.set_access_channels(websocketpp::log::alevel::none);
-    m_server.set_error_channels(websocketpp::log::elevel::warn |
-                                websocketpp::log::elevel::rerror);
+    if (m_ipTracker->pSettings->hasVerbose()) {
+        m_server.set_access_channels(websocketpp::log::alevel::none);
+        m_server.set_error_channels(websocketpp::log::elevel::warn |
+                                    websocketpp::log::elevel::rerror);
+    } else {
+        // Disable all websocketpp logging when not verbose
+        m_server.set_access_channels(websocketpp::log::alevel::none);
+        m_server.set_error_channels(websocketpp::log::elevel::none);
+    }
 
     if (m_ipTracker->pSettings->hasVerbose())
         Logger::getInstance().log(LogLevel::INFO, __func__,

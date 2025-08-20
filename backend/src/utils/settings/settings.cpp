@@ -1,6 +1,6 @@
 #include "settings.hpp"
-#include "utils/logger/logger.hpp"
 #include "utils/settings/settings_utils/settings.hpp"
+#include "utils/logger/logger.hpp"
 #include <fstream>
 #include <memory>
 #include <mutex>
@@ -95,7 +95,8 @@ std::shared_ptr<Settings> Settings::loadFromFile() {
     } catch (const std::exception& e) {
         Logger::getInstance().log(LogLevel::ERROR, __func__,
                                   "Failed to create config directory: '" +
-                                      configDir.string() + "': " + e.what());
+                                      configDir.string() + "': " + e.what(),
+                                  "app.log");
         throw;
     }
 
@@ -112,7 +113,7 @@ std::shared_ptr<Settings> Settings::loadFromFile() {
             }
             {
                 std::lock_guard<std::mutex> lock(s->m_interfaceMutex);
-                s->m_interfaceOption = j.value("interfaceOption", "AUTO");
+                s->m_interfaceOption = j.value("interfaceOption", "Auto");
             }
             {
                 std::lock_guard<std::mutex> lock(s->m_ipFilterMutex);
@@ -134,8 +135,8 @@ std::shared_ptr<Settings> Settings::loadFromFile() {
                 s->m_lookupMode.store(LookupMode::API);
 
             // Enum ActiveTheme
-            std::string themeStr = j.value("activeTheme", "AUTO");
-            if (themeStr == "DARK")
+            std::string themeStr = j.value("activeTheme", "Auto");
+            if (themeStr == "Dark")
                 s->m_activeTheme.store(ActiveTheme::DARK);
             else if (themeStr == "LIGHT")
                 s->m_activeTheme.store(ActiveTheme::LIGHT);
@@ -143,12 +144,10 @@ std::shared_ptr<Settings> Settings::loadFromFile() {
                 s->m_activeTheme.store(ActiveTheme::AUTO);
 
             // Enum ActiveLanguage
-            std::string langStr = j.value("activeLanguage", "ENGLISH");
-            if (langStr == "ENGLISH")
-                s->m_activeLanguage.store(ActiveLanguage::ENGLISH);
-            else if (langStr == "SPANISH")
+            std::string langStr = j.value("activeLanguage", "English");
+            if (langStr == "Spanish")
                 s->m_activeLanguage.store(ActiveLanguage::SPANISH);
-            else if (langStr == "GREEK")
+            else if (langStr == "Greek")
                 s->m_activeLanguage.store(ActiveLanguage::GREEK);
             else
                 s->m_activeLanguage.store(ActiveLanguage::ENGLISH);
@@ -166,14 +165,15 @@ std::shared_ptr<Settings> Settings::loadFromFile() {
             Logger::getInstance().log(LogLevel::ERROR, __func__,
                                       "Failed to parse settings JSON: '" +
                                           configFilePath.string() +
-                                          "': " + e.what());
+                                          "': " + e.what(),
+                                      "app.log");
         }
     }
 
     if (s->hasVerbose())
-        Logger::getInstance().log(LogLevel::INFO, __func__,
-                                  "Loaded settings from: " +
-                                      configFilePath.string());
+        Logger::getInstance().log(
+            LogLevel::INFO, __func__,
+            "Loaded settings from: " + configFilePath.string(), "app.log");
     return s;
 }
 
@@ -186,7 +186,8 @@ void Settings::saveToFile() {
     } catch (const std::exception& e) {
         Logger::getInstance().log(LogLevel::ERROR, __func__,
                                   "Failed to create config directory: '" +
-                                      configDir.string() + "': " + e.what());
+                                      configDir.string() + "': " + e.what(),
+                                  "app.log");
         throw;
     }
 
@@ -215,34 +216,31 @@ void Settings::saveToFile() {
             j["lookupMode"] = "API";
             break;
         default:
-            j["lookupMode"] = "API";
+            j["lookupMode"] = "Auto";
             break;
     }
 
     switch (m_activeTheme.load()) {
         case ActiveTheme::DARK:
-            j["activeTheme"] = "DARK";
+            j["activeTheme"] = "Dark";
             break;
         case ActiveTheme::LIGHT:
-            j["activeTheme"] = "LIGHT";
+            j["activeTheme"] = "Light";
             break;
         default:
-            j["activeTheme"] = "AUTO";
+            j["activeTheme"] = "Auto";
             break;
     }
 
     switch (m_activeLanguage.load()) {
-        case ActiveLanguage::ENGLISH:
-            j["activeLanguage"] = "ENGLISH";
-            break;
         case ActiveLanguage::SPANISH:
-            j["activeLanguage"] = "SPANISH";
+            j["activeLanguage"] = "Spanish";
             break;
         case ActiveLanguage::GREEK:
-            j["activeLanguage"] = "GREEK";
+            j["activeLanguage"] = "Greek";
             break;
         default:
-            j["activeLanguage"] = "ENGLISH";
+            j["activeLanguage"] = "English";
             break;
     }
 
@@ -258,7 +256,8 @@ void Settings::saveToFile() {
     if (!out) {
         Logger::getInstance().log(LogLevel::ERROR, __func__,
                                   "Failed to open config file for writing: '" +
-                                      configFilePath.string() + "'");
+                                      configFilePath.string() + "'",
+                                  "app.log");
         throw std::runtime_error("Failed to open config file for writing: " +
                                  configFilePath.string());
     }
@@ -268,13 +267,14 @@ void Settings::saveToFile() {
     if (out.fail()) {
         Logger::getInstance().log(LogLevel::ERROR, __func__,
                                   "Failed to write config file completely: '" +
-                                      configFilePath.string() + "'");
+                                      configFilePath.string() + "'",
+                                  "app.log");
         throw std::runtime_error("Failed to fully write config file: " +
                                  configFilePath.string());
     }
 
     if (hasVerbose())
-        Logger::getInstance().log(LogLevel::INFO, __func__,
-                                  "Saved settings to: " +
-                                      configFilePath.string());
+        Logger::getInstance().log(
+            LogLevel::INFO, __func__,
+            "Saved settings to: " + configFilePath.string(), "app.log");
 }

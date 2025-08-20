@@ -1,27 +1,53 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import Sidebar from './components/Sidebar'; // Your sidebar component
-import Map from './components/Map'; // The SVG globe Map.js we will provide
+import Sidebar from './components/Sidebar';
+import Map from './components/Map';
+import Settings from './components/Settings';
 import translations from './i18n';
+
+function getColors(theme) {
+    if (theme === 'Light') {
+        return { background: '#fff', text: '#222', mainBg: '#f9f9f9' };
+    }
+    if (theme === 'Dark') {
+        return { background: '#121212', text: '#fafafa', mainBg: '#222' };
+    }
+    // Auto: system preference
+    if (
+        window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches
+    ) {
+        return { background: '#121212', text: '#fafafa', mainBg: '#222' };
+    }
+    return { background: '#fff', text: '#222', mainBg: '#f9f9f9' };
+}
 
 function App() {
     const [settings, setSettings] = useState(null);
     const [traceResults, setTraceResults] = useState([]);
-    const [darkMode, setDarkMode] = useState(false);
+    // We move from darkMode boolean to theme string with 'Light' | 'Dark' | 'Auto'
+    const [theme, setTheme] = useState('Light');
     const [selectedPage, setSelectedPage] = useState('map');
     const ws = useRef(null);
 
-    // Load settings on mount (including darkMode)
+    // Load settings on mount
     useEffect(() => {
         fetch('http://localhost:8080/api/settings')
             .then((res) => res.json())
             .then((data) => {
                 setSettings(data);
-                if (data.darkMode !== undefined) setDarkMode(data.darkMode);
+                if (data.theme) setTheme(data.theme);
             })
             .catch((err) => console.error('Failed to load settings', err));
     }, []);
 
-    const activeLanguage = settings?.activeLanguage ?? 'ENGLISH';
+    // Sync `theme` state whenever settings.theme changes from Settings page
+    useEffect(() => {
+        if (settings?.theme && settings.theme !== theme) {
+            setTheme(settings.theme);
+        }
+    }, [settings, theme]);
+
+    const activeLanguage = settings?.activeLanguage?.toUpperCase() || 'ENGLISH';
     const t = translations[activeLanguage] || translations.ENGLISH;
 
     // WebSocket connection with batching and capped traceResults length to 200
@@ -37,7 +63,6 @@ function App() {
             if (buffer.length) {
                 setTraceResults((prev) => {
                     const combined = [...prev, ...buffer];
-                    // Keep max 200 latest
                     if (combined.length > 200) {
                         return combined.slice(combined.length - 200);
                     }
@@ -103,18 +128,45 @@ function App() {
         };
     }, [settings]);
 
-    // Memoize toggleDarkMode to avoid unnecessary re-renders downstream
-    const toggleDarkMode = useCallback(() => setDarkMode((prev) => !prev), []);
+    // Toggle theme in a cycle Light -> Dark -> Auto -> Light ...
+    const toggleTheme = useCallback(() => {
+        setTheme((prev) => {
+            if (prev === 'Light') return 'Dark';
+            if (prev === 'Dark') return 'Auto';
+            return 'Light';
+        });
+        // Also update in settings for consistency
+        setSettings((prev) => ({
+            ...prev,
+            theme:
+                prev.theme === 'Light'
+                    ? 'Dark'
+                    : prev.theme === 'Dark'
+                      ? 'Auto'
+                      : 'Light',
+        }));
+    }, []);
+
+    const colors = getColors(theme);
 
     let content = null;
     if (selectedPage === 'map') {
         content = (
             <Map
                 traceResults={traceResults}
-                darkMode={darkMode}
+                darkMode={
+                    theme === 'Dark' ||
+                    (theme === 'Auto' &&
+                        window.matchMedia?.('(prefers-color-scheme: dark)')
+                            .matches)
+                }
                 animationToggle={settings?.animationToggle ?? false}
-                activeLanguage={activeLanguage}
+                t={t}
             />
+        );
+    } else if (selectedPage === 'settings') {
+        content = (
+            <Settings settings={settings} setSettings={setSettings} t={t} />
         );
     } else if (selectedPage === 'logging') {
         content = <div>{t.loggingPageTitle}</div>;
@@ -127,33 +179,37 @@ function App() {
             style={{
                 display: 'flex',
                 height: '100vh',
-                color: darkMode ? '#fafafa' : '#222',
-                backgroundColor: darkMode ? '#121212' : '#fff',
+                color: colors.text,
+                backgroundColor: colors.background,
             }}
         >
             {/* Sidebar fixed width, no shrinking */}
             <div style={{ flexShrink: 0 }}>
                 <Sidebar
-                    isDark={darkMode}
-                    toggleDarkMode={toggleDarkMode}
+                    isDark={
+                        theme === 'Dark' ||
+                        (theme === 'Auto' &&
+                            window.matchMedia?.('(prefers-color-scheme: dark)')
+                                .matches)
+                    }
+                    toggleDarkMode={toggleTheme}
                     onSelect={setSelectedPage}
                     active={selectedPage}
                     activeLanguage={activeLanguage}
+                    t={t}
                 />
             </div>
 
-            {/* Main content fills remaining space, no padding here */}
+            {/* Main content fills remaining space */}
             <main
                 style={{
                     flexGrow: 1,
-                    overflow: 'hidden', // Important: prevent main scrollbar, map handles its own
-                    display: 'flex', // use flexbox to make child fill
+                    overflow: 'hidden', // important to prevent scrollbars
+                    display: 'flex',
                     flexDirection: 'column',
-                    // no padding here so no gaps!
-                    backgroundColor: darkMode ? '#222' : '#f9f9f9',
+                    backgroundColor: colors.mainBg,
                 }}
             >
-                {/* Make content fill full main height */}
                 <div style={{ flexGrow: 1 }}>{content}</div>
             </main>
         </div>

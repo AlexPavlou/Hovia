@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdint>
 #include <websocketpp/server.hpp>
 #include <websocketpp/config/asio_no_tls.hpp>
 #include "utils/common_structs.hpp"
@@ -11,6 +10,19 @@
 class IpTracker;
 
 typedef websocketpp::server<websocketpp::config::asio> server;
+
+class CrowLogBridge : public crow::ILogHandler {
+    public:
+        using crow::ILogHandler::log;
+
+        void log(std::string&& line);
+        void log(const std::string& line);
+
+        // This is the pure virtual function crow requires you to implement
+        void log(std::string message, crow::LogLevel level);
+
+        virtual ~CrowLogBridge();
+};
 
 class ApiServer {
     public:

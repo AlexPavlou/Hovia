@@ -36,7 +36,7 @@ struct Settings {
         std::string m_logPath = "app.log";
         mutable std::mutex m_logPathMutex;
 
-        std::string m_interfaceOption = "AUTO";
+        std::string m_interfaceOption = "Auto";
         mutable std::mutex m_interfaceMutex;
 
         std::string m_ipFilter =
@@ -49,7 +49,7 @@ struct Settings {
         std::atomic<ActiveLanguage> m_activeLanguage = ActiveLanguage::ENGLISH;
         std::atomic<ActiveTheme> m_activeTheme = ActiveTheme::AUTO;
 
-        std::atomic<int> m_maxHops = 15;
+        std::atomic<uint8_t> m_maxHops = 15;
         std::atomic<uint16_t> m_WebsocketPort{9002};
 
     public:

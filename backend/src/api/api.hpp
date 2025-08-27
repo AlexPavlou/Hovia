@@ -1,8 +1,10 @@
 #pragma once
+
 #include <websocketpp/server.hpp>
 #include <websocketpp/config/asio_no_tls.hpp>
 #include "utils/common_structs.hpp"
 #include <nlohmann/json.hpp>
+#include "utils/logger/logger.hpp"
 #include <thread>
 #include <atomic>
 #include "crow_all.h"
@@ -17,8 +19,6 @@ class CrowLogBridge : public crow::ILogHandler {
 
         void log(std::string&& line);
         void log(const std::string& line);
-
-        // This is the pure virtual function crow requires you to implement
         void log(std::string message, crow::LogLevel level);
 
         virtual ~CrowLogBridge();
@@ -29,24 +29,34 @@ class ApiServer {
         ApiServer(IpTracker* ipTracker);
         ~ApiServer();
 
-        // start webbsocket and HTTP servers on the specified ports
         void startAPI();
         void stopAPI();
-        // send traceResult to the connected websocket client
         void sendResult(const traceResult& result);
+
+        static LogLevel convertCrowLogLevel(crow::LogLevel lvl);
 
     private:
         IpTracker* m_ipTracker;
         using connHandle = websocketpp::connection_hdl;
-        std::thread m_httpThread;  // http server thread
+
+        std::thread m_httpThread;
+        std::unique_ptr<crow::SimpleApp> m_pApp;
 
         std::atomic<bool> m_running;
-        server m_server;           // websocket server instance
-        connHandle m_hdl;          // websocket connection handle
-        std::thread m_sendThread;  // thread that runs asynchronously to send
-                                   // websocket messages
 
+        server m_server;
+        connHandle m_hdl;
+
+        std::thread m_sendThread;
         std::thread m_wsThread;
+
+        void setCorsHeaders(crow::response& res) const;
+
+        crow::response handleSettingsOptions() const;
+        crow::response handleSettingsGet() const;
+        crow::response handleSettingsPost(const crow::request& req);
+        crow::response handleInterfacesOptions() const;
+        crow::response handleInterfacesGet() const;
 
         void sendLoop();
         void setupHttp(crow::SimpleApp& app);

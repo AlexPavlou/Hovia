@@ -4,6 +4,9 @@
 
 <img src="https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=black" height="20" alt="React" />&nbsp;&nbsp;
 <img src="https://img.shields.io/badge/C%2B%2B-00599C?style=flat&logo=c%2B%2B&logoColor=white" height="20" alt="C++" />&nbsp;&nbsp;
+<img src="https://img.shields.io/badge/Tailwind%20CSS-%2338B2AC.svg?logo=tailwind-css&logoColor=white" height="20" alt="Tailwind CSS" />&nbsp;&nbsp;
+<img src="https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=fff" height="20" alt="Vite" />&nbsp;&nbsp;
+<img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=fff" height="20" alt="TypeScript" />&nbsp;&nbsp;
 <img src="https://img.shields.io/github/issues/AlexPavlou/Hovia?style=flat&logo=github&label=Issues" height="20" alt="Issues" />&nbsp;&nbsp;
 <img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat" height="20" alt="License" />&nbsp;&nbsp;
 <img src="https://img.shields.io/badge/Linux-FCC624?style=flat&logo=linux&logoColor=black" height="20" alt="Linux" />&nbsp;&nbsp;
@@ -58,9 +61,10 @@ Visualizing how your network traffic flows globally.
 | Component     | Technology                      |
 | ------------- | ------------------------------- |
 | Backend       | C++ with libtins, libpcap/WinPcap|
-| Frontend      | React, JSX, JavaScript, CSS     |
+| Frontend      | React, TypeScript, JSX, TailwindCSS, Vite|
 | Communication | WebSocket, HTTP                 |
 | Build System  | CMake (backend), npm (frontend) |
+| Icons & UI    | lucide-react, daisyUI           |
 
 </div>
 
@@ -129,7 +133,7 @@ Visualizing how your network traffic flows globally.
 
 ## Usage
 
-Simply Use your computer as normal while Hovia runs.
+Simply use your computer as normal while Hovia runs.
 
 ## Configuration
 
@@ -204,7 +208,7 @@ The app can be customized either via the frontend UI or by editing the settings.
 </details>
 
 <details>
-  <summary><strong>Active Theme</strong></summary>
+  <summary><strong>Theme</strong></summary>
 
   &nbsp;&nbsp;User interface theme. When set to Auto, the app follows system preferences.  
   &nbsp;&nbsp;**Options:** Auto, Light, Dark  
@@ -230,10 +234,10 @@ The app can be customized either via the frontend UI or by editing the settings.
 
 ## Acknowledgments
 
-- High-performance packet sniffing with [libpcap](https://github.com/the-tcpdump-group/libpcap), [WinPcap](https://www.winpcap.org/), and [libtins](https://libtins.github.io)  
+- Implemented network services through [libpcap](https://github.com/the-tcpdump-group/libpcap), [WinPcap](https://www.winpcap.org/), and [libtins](https://libtins.github.io)  
 - Utilised a Unix traceroute implementation, [traceroute](https://github.com/imdibr/traceroute) by [imdibr](https://github.com/imdibr), applying debugging and modifications
 - IP geolocation data provided by [ip-api.com](http://ip-api.com)  
+- Made use of components from the [DaisyUI](https://daisyui.com/) tailwind plugin
 - Inspired by network tools like Wireshark
-
 
 ---

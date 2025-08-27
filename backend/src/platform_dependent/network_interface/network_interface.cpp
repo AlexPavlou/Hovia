@@ -1,11 +1,13 @@
 #include "network_interface.hpp"
 #include "utils/logger/logger.hpp"
 
+#include <vector>
+#include <string>
+
 #if defined(_WIN32) || defined(_WIN64)
 
 #include <winsock2.h>
 #include <iphlpapi.h>
-#include <vector>
 #include <windows.h>  // For WideCharToMultiByte
 
 #pragma comment(lib, "iphlpapi.lib")
@@ -76,11 +78,59 @@ std::string getDefaultInterface() {
     return "";
 }
 
+std::vector<std::string> getAllInterfaces() {
+    WSADATA wsaData;
+    std::vector<std::string> interfaces;
+
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "WSAStartup failed");
+        return interfaces;
+    }
+
+    ULONG size = 0;
+    if (GetAdaptersAddresses(AF_UNSPEC, 0, nullptr, nullptr, &size) !=
+        ERROR_BUFFER_OVERFLOW) {
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "GetAdaptersAddresses size query failed");
+        WSACleanup();
+        return interfaces;
+    }
+
+    std::vector<BYTE> buffer(size);
+    PIP_ADAPTER_ADDRESSES adapters =
+        reinterpret_cast<PIP_ADAPTER_ADDRESSES>(buffer.data());
+
+    if (GetAdaptersAddresses(AF_UNSPEC, 0, nullptr, adapters, &size) !=
+        NO_ERROR) {
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "GetAdaptersAddresses data query failed");
+        WSACleanup();
+        return interfaces;
+    }
+
+    for (PIP_ADAPTER_ADDRESSES adapter = adapters; adapter != nullptr;
+         adapter = adapter->Next) {
+        if (adapter->OperStatus == IfOperStatusUp &&
+            adapter->IfType !=
+                IF_TYPE_SOFTWARE_LOOPBACK) {  // Exclude software loopback
+                                              // adapters
+            interfaces.push_back(WideCharToString(adapter->FriendlyName));
+        }
+    }
+
+    WSACleanup();
+    return interfaces;
+}
+
 #elif defined(__linux__)
 
 #include <fstream>
 #include <sstream>
-#include <string>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <cstring>
+#include <algorithm>
 
 std::string getDefaultInterface() {
     std::ifstream routeFile("/proc/net/route");
@@ -107,13 +157,40 @@ std::string getDefaultInterface() {
     return "";
 }
 
+std::vector<std::string> getAllInterfaces() {
+    std::vector<std::string> interfaces;
+
+    struct ifaddrs* ifap;
+    if (getifaddrs(&ifap) != 0) {
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "getifaddrs failed");
+        return interfaces;
+    }
+
+    for (struct ifaddrs* ifa = ifap; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (ifa->ifa_name && (ifa->ifa_flags & IFF_UP) &&
+            !(ifa->ifa_flags & IFF_LOOPBACK)) {  // Exclude loopback
+            std::string ifaceName(ifa->ifa_name);
+            if (std::find(interfaces.begin(), interfaces.end(), ifaceName) ==
+                interfaces.end()) {
+                interfaces.push_back(ifaceName);
+            }
+        }
+    }
+
+    freeifaddrs(ifap);
+    return interfaces;
+}
+
 #elif defined(__APPLE__) || defined(__FreeBSD__)
 
 #include <sys/sysctl.h>
 #include <net/route.h>
 #include <net/if_dl.h>
 #include <netinet/in.h>
-#include <string>
+#include <ifaddrs.h>
+#include <algorithm>
+#include <net/if.h>
 #include <cstdlib>
 
 std::string getDefaultInterface() {
@@ -184,12 +261,43 @@ std::string getDefaultInterface() {
     return defaultIface;
 }
 
+std::vector<std::string> getAllInterfaces() {
+    std::vector<std::string> interfaces;
+
+    struct ifaddrs* ifap;
+    if (getifaddrs(&ifap) != 0) {
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "getifaddrs failed");
+        return interfaces;
+    }
+
+    for (struct ifaddrs* ifa = ifap; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (ifa->ifa_name && (ifa->ifa_flags & IFF_UP) &&
+            !(ifa->ifa_flags & IFF_LOOPBACK)) {  // Exclude loopback
+            std::string ifaceName(ifa->ifa_name);
+            if (std::find(interfaces.begin(), interfaces.end(), ifaceName) ==
+                interfaces.end()) {
+                interfaces.push_back(ifaceName);
+            }
+        }
+    }
+
+    freeifaddrs(ifap);
+    return interfaces;
+}
+
 #else
 
 std::string getDefaultInterface() {
     Logger::getInstance().log(LogLevel::ERROR, __func__,
                               "Unsupported platform");
     return "";
+}
+
+std::vector<std::string> getAllInterfaces() {
+    Logger::getInstance().log(LogLevel::ERROR, __func__,
+                              "Unsupported platform");
+    return {};
 }
 
 #endif

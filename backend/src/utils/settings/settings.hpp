@@ -50,7 +50,7 @@ struct Settings {
         std::atomic<ActiveTheme> m_activeTheme = ActiveTheme::AUTO;
 
         std::atomic<uint8_t> m_maxHops = 15;
-        std::atomic<uint16_t> m_WebsocketPort{9002};
+        std::atomic<uint16_t> m_websocketPort{9002};
 
     public:
         static std::shared_ptr<Settings> loadFromFile();

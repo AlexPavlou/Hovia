@@ -20,6 +20,7 @@ class IpTracker {
         bool dequeueResult(traceResult& Result);
         void start();
         void stop();
+        bool hasStopped();
 
     private:
         Capture m_capture;

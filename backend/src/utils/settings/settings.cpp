@@ -76,10 +76,10 @@ int Settings::getMaxHops() const { return m_maxHops.load(); }
 
 void Settings::setMaxHops(const int val) { m_maxHops.store(val); }
 
-uint16_t Settings::getWebsocket() const { return m_WebsocketPort.load(); }
+uint16_t Settings::getWebsocket() const { return m_websocketPort.load(); }
 
 void Settings::setWebsocket(uint16_t newWebsocket) {
-    m_WebsocketPort.store(newWebsocket);
+    m_websocketPort.store(newWebsocket);
 }
 // This function receives a path and begins to parse said json file, setting up
 // all of the app's settings atomically and setting up mutexes for all string
@@ -135,7 +135,7 @@ std::shared_ptr<Settings> Settings::loadFromFile() {
                 s->m_lookupMode.store(LookupMode::API);
 
             // Enum ActiveTheme
-            std::string themeStr = j.value("activeTheme", "Auto");
+            std::string themeStr = j.value("theme", "Auto");
             if (themeStr == "Dark")
                 s->m_activeTheme.store(ActiveTheme::DARK);
             else if (themeStr == "LIGHT")
@@ -159,7 +159,7 @@ std::shared_ptr<Settings> Settings::loadFromFile() {
             s->m_animationToggle.store(j.value("animationToggle", true));
             s->m_hasVerbose.store(j.value("hasVerbose", false));
 
-            s->m_WebsocketPort.store(j.value("WebsocketPort", 9002));
+            s->m_websocketPort.store(j.value("websocketPort", 9002));
 
         } catch (const std::exception& e) {
             Logger::getInstance().log(LogLevel::ERROR, __func__,
@@ -222,13 +222,13 @@ void Settings::saveToFile() {
 
     switch (m_activeTheme.load()) {
         case ActiveTheme::DARK:
-            j["activeTheme"] = "Dark";
+            j["theme"] = "Dark";
             break;
         case ActiveTheme::LIGHT:
-            j["activeTheme"] = "Light";
+            j["theme"] = "Light";
             break;
         default:
-            j["activeTheme"] = "Auto";
+            j["theme"] = "Auto";
             break;
     }
 
@@ -250,7 +250,7 @@ void Settings::saveToFile() {
     j["animationToggle"] = m_animationToggle.load();
     j["hasVerbose"] = m_hasVerbose.load();
 
-    j["WebsocketPort"] = m_WebsocketPort.load();
+    j["websocketPort"] = m_websocketPort.load();
 
     std::ofstream out(configFilePath);
     if (!out) {

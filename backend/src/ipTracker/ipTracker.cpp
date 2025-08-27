@@ -18,6 +18,8 @@ void IpTracker::enqueueIp(const uint32_t ip) {
     m_ipQueueCond.notify_one();
 }
 
+bool IpTracker::hasStopped() { return m_hasStopped; }
+
 // Dequeue IP, making sure
 bool IpTracker::dequeueIp(uint32_t &ip) {
     std::unique_lock<std::mutex> lock(m_ipQueueMutex);

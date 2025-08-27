@@ -1,16 +1,13 @@
 #include "api.hpp"
 #include "ipTracker/ipTracker.hpp"
-#include "utils/common_structs.hpp"
+#include "utils/api/apiHelpers.hpp"
+#include "utils/api/serialization.hpp"
+#include "platform_dependent/network_interface/network_interface.hpp"
 #include "utils/logger/logger.hpp"
-#include <websocketpp/server.hpp>
-#include <nlohmann/json.hpp>
-#include <thread>
-#include <atomic>
 
 using json = nlohmann::json;
 
-// Helper to convert crow log levels to the internal logger's LogLevel enum
-LogLevel convertCrowLogLevel(crow::LogLevel lvl) {
+LogLevel ApiServer::convertCrowLogLevel(crow::LogLevel lvl) {
     switch (lvl) {
         case crow::LogLevel::Debug:
             return LogLevel::DEBUG;
@@ -25,6 +22,7 @@ LogLevel convertCrowLogLevel(crow::LogLevel lvl) {
     }
 }
 
+// CrowLogBridge Implementation
 void CrowLogBridge::log(std::string&& line) {
     Logger::getInstance().log(LogLevel::INFO, "crow", std::move(line));
 }
@@ -34,242 +32,182 @@ void CrowLogBridge::log(const std::string& line) {
 }
 
 void CrowLogBridge::log(std::string message, crow::LogLevel level) {
-    Logger::getInstance().log(convertCrowLogLevel(level), "crow",
+    Logger::getInstance().log(ApiServer::convertCrowLogLevel(level), "crow",
                               std::move(message));
 }
 
 CrowLogBridge::~CrowLogBridge() = default;
 
-// JSON serialization for hopInfo struct
-void to_json(json& j, const hopInfo& h) {
-    j = json{{"hopIP", std::string(h.hopIP)}, {"latency", h.latency}};
-}
-
-// JSON serialization for destInfo struct
-void to_json(json& j, const destInfo& d) {
-    j = json{{"ip", std::string(d.ip)},
-             {"country", d.country},
-             {"region", d.region},
-             {"isp", d.isp},
-             {"org", d.org},
-             {"as", d.as},
-             {"asname", d.asname},
-             {"latitude", d.latitude},
-             {"longitude", d.longitude},
-             {"time_zone", d.time_zone}};
-}
-
-// JSON serialization for traceResult struct
-void to_json(json& j, const traceResult& t) {
-    j = json{{"dest_info", t.dest_info}, {"hops", t.hops}};
-}
+// ApiServer Implementation
 
 ApiServer::ApiServer(IpTracker* ipTracker)
     : m_ipTracker(ipTracker), m_running(false) {
-    m_server.init_asio();  // initialize ASIO transport
+    m_server.init_asio();
 
-    m_server.set_open_handler([this](connHandle hdl) {
-        // store connection handle
-        m_hdl = hdl;
-    });
+    m_server.set_open_handler([this](connHandle hdl) { m_hdl = hdl; });
 
     m_server.set_message_handler(
         [this](connHandle hdl, server::message_ptr msg) {
-            //
             m_server.send(hdl, msg->get_payload(),
                           websocketpp::frame::opcode::text);
         });
 
-    m_server.set_close_handler([this](connHandle) {
-        // reset stored handle when the connection closes
-        m_hdl.reset();
-    });
+    m_server.set_close_handler([this](connHandle) { m_hdl.reset(); });
 }
 
 ApiServer::~ApiServer() { stopAPI(); }
 
-// function to setup the crow HTTP routes for the different API endpoints
-// also handles CORS headers and GET/POST/OPTIONS for /api/settings
+void ApiServer::setCorsHeaders(crow::response& res) const {
+    res.set_header("Access-Control-Allow-Origin", "http://localhost:5173");
+    res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set_header("Access-Control-Allow-Headers",
+                   "Content-Type, Authorization");
+}
+
+crow::response ApiServer::handleSettingsOptions() const {
+    crow::response res;
+    setCorsHeaders(res);
+    res.code = 204;
+    return res;
+}
+
+crow::response ApiServer::handleSettingsGet() const {
+    crow::json::wvalue res;
+    auto& settings = m_ipTracker->pSettings;
+
+    res["logPath"] = settings->getLogPath();
+    res["interfaceOption"] = settings->getInterfaceOption();
+    res["filter"] = settings->getFilter();
+    res["lookupMode"] = lookupModeToString(settings->getLookupMode());
+    res["theme"] = themeToString(settings->getTheme());
+    res["activeLanguage"] = languageToString(settings->getLanguage());
+    res["maxHops"] = settings->getMaxHops();
+    res["timeout"] = settings->getTimeout();
+    res["animationToggle"] = settings->getAnimationToggle();
+    res["hasVerbose"] = settings->hasVerbose();
+    res["websocketPort"] = settings->getWebsocket();
+
+    crow::response response{res};
+    setCorsHeaders(response);
+    return response;
+}
+
+crow::response ApiServer::handleSettingsPost(const crow::request& req) {
+    auto body = crow::json::load(req.body);
+    if (!body) {
+        crow::response res(400, "Invalid JSON");
+        setCorsHeaders(res);
+        return res;
+    }
+    auto& settings = m_ipTracker->pSettings;
+
+    if (body.has("logPath"))
+        settings->setLogPath(body["logPath"].s());
+    if (body.has("interfaceOption"))
+        settings->setInterfaceOption(body["interfaceOption"].s());
+    if (body.has("filter"))
+        settings->setFilter(body["filter"].s());
+
+    if (body.has("lookupMode")) {
+        auto lm = body["lookupMode"].s();
+        if (lm == "DB")
+            settings->setLookupMode(LookupMode::DB);
+        else if (lm == "API")
+            settings->setLookupMode(LookupMode::API);
+        else
+            settings->setLookupMode(LookupMode::AUTO);
+    }
+
+    if (body.has("theme")) {
+        auto theme = body["theme"].s();
+        if (theme == "Dark")
+            settings->setTheme(ActiveTheme::DARK);
+        else if (theme == "Light")
+            settings->setTheme(ActiveTheme::LIGHT);
+        else
+            settings->setTheme(ActiveTheme::AUTO);
+    }
+
+    if (body.has("activeLanguage")) {
+        auto lang = body["activeLanguage"].s();
+        if (lang == "Spanish")
+            settings->setLanguage(ActiveLanguage::SPANISH);
+        else if (lang == "Greek")
+            settings->setLanguage(ActiveLanguage::GREEK);
+        else
+            settings->setLanguage(ActiveLanguage::ENGLISH);
+    }
+
+    if (body.has("maxHops"))
+        settings->setMaxHops(body["maxHops"].i());
+    if (body.has("timeout"))
+        settings->setTimeout(body["timeout"].i());
+    if (body.has("animationToggle"))
+        settings->setAnimationToggle(body["animationToggle"].b());
+    if (body.has("hasVerbose"))
+        settings->setVerbose(body["hasVerbose"].b());
+    if (body.has("WebsocketPort"))
+        settings->setWebsocket(body["WebsocketPort"].i());
+
+    crow::response res(200, "Settings updated");
+    setCorsHeaders(res);
+    return res;
+}
+
+crow::response ApiServer::handleInterfacesOptions() const {
+    crow::response res;
+    setCorsHeaders(res);
+    res.code = 204;
+    return res;
+}
+
+crow::response ApiServer::handleInterfacesGet() const {
+    crow::json::wvalue res = crow::json::wvalue::list();
+    int i = 0;
+    for (const auto& iface : getAllInterfaces()) {
+        res[i++] = iface;
+    }
+    crow::response response{res};
+    setCorsHeaders(response);
+    return response;
+}
+
 void ApiServer::setupHttp(crow::SimpleApp& app) {
-    auto setCorsHeaders = [](crow::response& res) {
-        // allow localhost React app to access the API
-        res.set_header("Access-Control-Allow-Origin", "http://localhost:3000");
-        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        res.set_header("Access-Control-Allow-Headers",
-                       "Content-Type, Authorization");
-    };
-
-    // Handle OPTIONS preflight request
+    CROW_ROUTE(app, "/api/settings").methods("OPTIONS"_method)([this]() {
+        return handleSettingsOptions();
+    });
+    CROW_ROUTE(app, "/api/settings").methods("GET"_method)([this]() {
+        return handleSettingsGet();
+    });
     CROW_ROUTE(app, "/api/settings")
-        .methods("OPTIONS"_method)([setCorsHeaders]() {
-            crow::response res;
-            setCorsHeaders(res);
-            res.code = 204;  // No Content
-            return res;
+        .methods("POST"_method)([this](const crow::request& req) {
+            return handleSettingsPost(req);
         });
-
-    CROW_ROUTE(app, "/api/settings")
-        .methods("GET"_method)([this, setCorsHeaders]() {
-            crow::json::wvalue res;
-
-            // Basic strings
-            res["logPath"] = m_ipTracker->pSettings->getLogPath();
-            res["interfaceOption"] =
-                m_ipTracker->pSettings->getInterfaceOption();
-            res["filter"] = m_ipTracker->pSettings->getFilter();
-
-            // LookupMode as string
-            switch (m_ipTracker->pSettings->getLookupMode()) {
-                case LookupMode::DB:
-                    res["lookupMode"] = "DB";
-                    break;
-                case LookupMode::API:
-                    res["lookupMode"] = "API";
-                    break;
-                default:
-                    res["lookupMode"] = "Auto";
-                    break;
-            }
-
-            // Theme as string
-            switch (m_ipTracker->pSettings->getTheme()) {
-                case ActiveTheme::DARK:
-                    res["activeTheme"] = "Dark";
-                    break;
-                case ActiveTheme::LIGHT:
-                    res["activeTheme"] = "Light";
-                    break;
-                default:
-                    res["activeTheme"] = "Auto";
-                    break;
-            }
-
-            // Language as string
-            switch (m_ipTracker->pSettings->getLanguage()) {
-                case ActiveLanguage::SPANISH:
-                    res["activeLanguage"] = "Spanish";
-                    break;
-                case ActiveLanguage::GREEK:
-                    res["activeLanguage"] = "Greek";
-                    break;
-                default:
-                    res["activeLanguage"] = "English";
-                    break;
-            }
-
-            // Other values
-            res["maxHops"] = m_ipTracker->pSettings->getMaxHops();
-            res["timeout"] = m_ipTracker->pSettings->getTimeout();
-
-            // Boolean flags
-            res["animationToggle"] =
-                m_ipTracker->pSettings->getAnimationToggle();
-            res["hasVerbose"] = m_ipTracker->pSettings->hasVerbose();
-
-            res["WebsocketPort"] = m_ipTracker->pSettings->getWebsocket();
-
-            crow::response response{res};
-            setCorsHeaders(response);
-            return response;
-        });
-
-    CROW_ROUTE(app, "/api/settings")
-        .methods(
-            "POST"_method)([this, setCorsHeaders](const crow::request& req) {
-            auto body = crow::json::load(req.body);
-            if (!body) {
-                crow::response res(400, "Invalid JSON");
-                setCorsHeaders(res);
-                return res;
-            }
-
-            if (body.has("logPath"))
-                m_ipTracker->pSettings->setLogPath(body["logPath"].s());
-
-            if (body.has("interfaceOption"))
-                m_ipTracker->pSettings->setInterfaceOption(
-                    body["interfaceOption"].s());
-
-            if (body.has("filter"))
-                m_ipTracker->pSettings->setFilter(body["filter"].s());
-
-            if (body.has("lookupMode")) {
-                auto lookupMode = body["lookupMode"].s();
-                if (lookupMode == "DB")
-                    m_ipTracker->pSettings->setLookupMode(LookupMode::DB);
-                else if (lookupMode == "API")
-                    m_ipTracker->pSettings->setLookupMode(LookupMode::API);
-                else
-                    m_ipTracker->pSettings->setLookupMode(LookupMode::AUTO);
-            }
-
-            if (body.has("activeTheme")) {
-                auto theme = body["activeTheme"].s();
-                if (theme == "Dark")
-                    m_ipTracker->pSettings->setTheme(ActiveTheme::DARK);
-                else if (theme == "Light")
-                    m_ipTracker->pSettings->setTheme(ActiveTheme::LIGHT);
-                else
-                    m_ipTracker->pSettings->setTheme(ActiveTheme::AUTO);
-            }
-
-            if (body.has("activeLanguage")) {
-                auto lang = body["activeLanguage"].s();
-                if (lang == "Spanish")
-                    m_ipTracker->pSettings->setLanguage(
-                        ActiveLanguage::SPANISH);
-                else if (lang == "Greeek")
-                    m_ipTracker->pSettings->setLanguage(ActiveLanguage::GREEK);
-                else
-                    m_ipTracker->pSettings->setLanguage(
-                        ActiveLanguage::ENGLISH);
-            }
-
-            if (body.has("maxHops"))
-                m_ipTracker->pSettings->setMaxHops(body["maxHops"].i());
-
-            if (body.has("timeout"))
-                m_ipTracker->pSettings->setTimeout(body["timeout"].i());
-
-            if (body.has("animationToggle"))
-                m_ipTracker->pSettings->setAnimationToggle(
-                    body["animationToggle"].b());
-
-            if (body.has("hasVerbose"))
-                m_ipTracker->pSettings->setVerbose(body["hasVerbose"].b());
-
-            if (body.has("WebsocketPort"))
-                m_ipTracker->pSettings->setWebsocket(body["WebsocketPort"].i());
-
-            // m_ipTracker->pSettings->saveToFile();
-
-            crow::response res(200, "Settings updated");
-            setCorsHeaders(res);
-            return res;
-        });
+    CROW_ROUTE(app, "/api/interfaces").methods("OPTIONS"_method)([this]() {
+        return handleInterfacesOptions();
+    });
+    CROW_ROUTE(app, "/api/interfaces").methods("GET"_method)([this]() {
+        return handleInterfacesGet();
+    });
 }
 
 void ApiServer::startAPI() {
     m_running.store(true);
-
-    // replace default crow logger with bridge to the app's logger
-    // crow takes full ownership of the bridge's pointer and manages its
-    // lifetime
     crow::logger::setHandler(new CrowLogBridge());
 
-    // HTTP server thread
     if (m_ipTracker->pSettings->hasVerbose())
         Logger::getInstance().log(LogLevel::INFO, __func__,
                                   "Initialising HTTP API at port 8080");
+
     m_httpThread = std::thread([this]() {
-        crow::SimpleApp app;
-        setupHttp(app);
-        app.port(8080).concurrency(1).run();
+        m_pApp = std::make_unique<crow::SimpleApp>();
+        setupHttp(*m_pApp);
+        m_pApp->port(8080).concurrency(1).run();
     });
 
-    // start websocket server listening on the given port
     boost::system::error_code ec;
     uint16_t ws_port = m_ipTracker->pSettings->getWebsocket();
+
     m_server.listen(ws_port, ec);
     if (ec) {
         Logger::getInstance().log(LogLevel::ERROR, __func__,
@@ -283,7 +221,6 @@ void ApiServer::startAPI() {
         m_server.set_error_channels(websocketpp::log::elevel::warn |
                                     websocketpp::log::elevel::rerror);
     } else {
-        // Disable all websocketpp logging when not verbose
         m_server.set_access_channels(websocketpp::log::alevel::none);
         m_server.set_error_channels(websocketpp::log::elevel::none);
     }
@@ -300,16 +237,13 @@ void ApiServer::startAPI() {
             LogLevel::INFO, __func__,
             "WS server started and accepting connections");
 
-    // WebSocket message sending thread
     m_sendThread = std::thread(&ApiServer::sendLoop, this);
-
-    // Run WebSocket server on its own thread
     m_wsThread = std::thread([this]() { m_server.run(); });
 }
 
 void ApiServer::stopAPI() {
     if (!m_running.exchange(false))
-        return;  // prevent double stop
+        return;
 
     try {
         if (m_ipTracker->pSettings->hasVerbose())
@@ -318,9 +252,7 @@ void ApiServer::stopAPI() {
                 "Attempting to stop the webSocket server thread");
         if (m_server.is_listening())
             m_server.stop_listening();
-
         m_server.stop();
-
         m_server.get_io_service().stop();
     } catch (const std::exception& e) {
         Logger::getInstance().log(LogLevel::ERROR, __func__, e.what());
@@ -332,10 +264,8 @@ void ApiServer::stopAPI() {
 
     if (m_sendThread.joinable())
         m_sendThread.join();
-
     if (m_wsThread.joinable())
         m_wsThread.join();
-
     if (m_httpThread.joinable())
         m_httpThread.join();
 }
@@ -348,7 +278,6 @@ void ApiServer::sendResult(const traceResult& result) {
     std::string msg = j.dump();
 
     try {
-        std::cout << msg;
         if (m_ipTracker->pSettings->hasVerbose())
             Logger::getInstance().log(LogLevel::INFO, __func__,
                                       "Sent message: '" + msg +
@@ -361,16 +290,12 @@ void ApiServer::sendResult(const traceResult& result) {
     }
 }
 
-// loop thread that dequeues trace results and sends them over websocket using
-// the dequeueResult(traceResult& tr) and sendResult(const traceResult& result)
-// functions
 void ApiServer::sendLoop() {
     try {
         while (m_running.load()) {
             traceResult tr;
             if (!m_ipTracker->dequeueResult(tr)) {
-                std::this_thread::sleep_for(
-                    std::chrono::milliseconds(50));  // prevent busy wait
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 continue;
             }
             if (m_ipTracker->pSettings->hasVerbose())
@@ -378,7 +303,6 @@ void ApiServer::sendLoop() {
                                           "Dequeued '" +
                                               std::string(tr.dest_info.ip) +
                                               "' from the result queue");
-
             if (!m_hdl.expired())
                 sendResult(tr);
         }

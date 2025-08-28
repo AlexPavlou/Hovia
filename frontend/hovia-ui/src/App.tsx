@@ -9,15 +9,10 @@ import useWebSocket from '@hooks/useWebSocket';
 import translations from '@i18n';
 
 function App() {
-    const [settings, setSettings] = useSettings();
-    const [isLoading, setIsLoading] = useState(true);
+    const [settings, setSettings, isLoading] = useSettings();
     const { theme, toggleTheme } = useTheme(settings);
     const [traceResults, setTraceResults] = useState([]);
     const [selectedPage, setSelectedPage] = useState('map');
-
-    useEffect(() => {
-        setIsLoading(false);
-    }, [settings]);
 
     useWebSocket(settings?.WebsocketPort, (newData) =>
         setTraceResults((prev) =>
@@ -65,7 +60,10 @@ function App() {
     if (!settings) return <SettingsNotConnected />;
 
     return (
-        <div className="bg-[#f9f9f9] dark:bg-[#121212] text-[#222] dark:text-[#fafafa] flex h-screen">
+        <div
+            data-theme={theme === 'Dark' ? 'dark' : 'light'}
+            className="bg-bg text-text flex h-screen"
+        >
             <Sidebar
                 darkThemeEnabled={theme === 'Dark'}
                 toggleDarkMode={toggleTheme}
@@ -74,7 +72,7 @@ function App() {
                 activeLanguage={activeLanguage}
                 t={t}
             />
-            <main className="flex-grow overflow-hidden flex flex-col bg-[#f9f9f9] dark:bg-[#222]">
+            <main className="flex-grow overflow-hidden flex flex-col bg-bg">
                 <div className="flex-grow">
                     {pages[selectedPage] || <div>{t.pages.pageNotFound}</div>}
                 </div>

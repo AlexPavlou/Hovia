@@ -32,7 +32,7 @@ export default React.memo(function Sidebar({
 
     return (
         <nav
-            className={`w-15 h-screen ${darkThemeEnabled ? 'bg-[#171C22] border-r border-[#444]' : 'bg-white border-r border-[#DDD]'} flex flex-col items-center justify-between p-3 select-none`}
+            className={`w-15 h-screen bg-bgSidebar border-r border-[#DDD] dark:border-[#444] flex flex-col items-center justify-between p-3 select-none`}
         >
             {/* Logo */}
             <div className="w-full mb-3 flex items-center justify-center">

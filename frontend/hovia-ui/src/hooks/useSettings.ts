@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 export interface SettingsType {
-    tracerouteTimeout?: number; // (0-255)
+    tracerouteTimeout?: number;
     animationToggle?: boolean;
     verboseLogging?: boolean;
     logPath?: string;
@@ -10,12 +10,13 @@ export interface SettingsType {
     lookupMode?: 'Auto' | 'API' | 'DB';
     language?: 'English' | 'Spanish' | 'Greek';
     theme?: 'Light' | 'Dark' | 'Auto';
-    maxHops?: number; // (0-255)
-    WebsocketPort?: number; // (0-65535)
+    maxHops?: number;
+    WebsocketPort?: number;
 }
 
 export default function useSettings() {
     const [settings, setSettings] = useState<SettingsType | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         let isMounted = true;
@@ -23,14 +24,23 @@ export default function useSettings() {
         fetch('http://localhost:8080/api/settings')
             .then((res) => res.json())
             .then((data: SettingsType) => {
-                if (isMounted) setSettings(data);
+                if (isMounted) {
+                    setSettings(data);
+                    setIsLoading(false);
+                }
             })
-            .catch(() => console.error('Failed to load settings'));
+            .catch(() => {
+                console.error('Failed to load settings');
+                if (isMounted) {
+                    setSettings(null);
+                    setIsLoading(false); // <- important
+                }
+            });
 
         return () => {
             isMounted = false;
         };
     }, []);
 
-    return [settings, setSettings] as const;
+    return [settings, setSettings, isLoading] as const;
 }

@@ -1,6 +1,6 @@
 function SettingsNotConnected() {
     return (
-        <div className="flex flex-col items-center justify-center h-screen text-gray-600 dark:text-gray-300 bg-white dark:bg-[#222] p-6">
+        <div className="flex flex-col items-center justify-center h-screen text-gray-600 dark:text-gray-300 bgAlt p-6">
             <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="w-20 h-20 mb-6 text-primary"

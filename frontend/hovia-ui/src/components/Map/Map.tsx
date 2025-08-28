@@ -22,35 +22,18 @@ export default React.memo(function Map(props) {
     } = props;
 
     const colors = {
-        light: {
-            oceanFill: '#f0f4f8',
-            countryFill: '#d9e2ec',
-            countryStroke: '#627d98',
-            arcStroke: 'rgba(37, 62, 78, 0.7)',
-            graticuleStroke: '#9fb3c8',
-            markerStroke: '#ffffffdd',
-            tooltipBg: 'rgba(0,0,0,0.7)',
-            tooltipColor: 'white',
-            dottedPatternFill: '#ccc',
-            auroraInner: 'rgba(144,194,255,0.35)',
-            auroraOuter: 'rgba(144,194,255,0.04)',
-        },
-        dark: {
-            oceanFill: '#22242a',
-            countryFill: '#30343d',
-            countryStroke: '#60676f',
-            arcStroke: 'rgba(255, 165, 0, 0.6)',
-            graticuleStroke: '#52575d',
-            markerStroke: '#d1d4da',
-            tooltipBg: 'rgba(40, 40, 40, 0.9)',
-            tooltipColor: '#eee',
-            dottedPatternFill: '#777a7f',
-            auroraInner: 'rgba(18,70,110,0.4)',
-            auroraOuter: 'rgba(18,70,110,0.07)',
-        },
+        oceanFill: 'var(--color-ocean-fill)',
+        countryFill: 'var(--color-country-fill)',
+        countryStroke: 'var(--color-country-stroke)',
+        arcStroke: 'var(--color-arc-stroke)',
+        graticuleStroke: 'var(--color-graticule-stroke)',
+        markerStroke: 'var(--color-marker-stroke)',
+        tooltipBg: 'var(--color-tooltip-bg)',
+        tooltipColor: 'var(--color-tooltip-text)',
+        dottedPatternFill: 'var(--color-dotted-pattern-fill)',
+        auroraInner: 'var(--color-aurora-inner)',
+        auroraOuter: 'var(--color-aurora-outer)',
     };
-
-    const theme = darkThemeEnabled ? colors.dark : colors.light;
 
     const containerRef = useRef<HTMLDivElement | null>(null);
     const svgRef = useRef<SVGSVGElement | null>(null);
@@ -294,7 +277,7 @@ export default React.memo(function Map(props) {
                 cy={y}
                 r={marker.size}
                 fill={marker.color}
-                stroke={theme.markerStroke}
+                stroke={colors.markerStroke}
                 strokeWidth={marker.id === 'home' ? 2 : 1}
                 filter={
                     marker.id === 'home'
@@ -372,7 +355,7 @@ export default React.memo(function Map(props) {
                     'Interactive globe map showing network routes'
                 }
                 shapeRendering="geometricPrecision"
-                className={darkThemeEnabled ? 'bg-[#222]' : 'bg-[#f9f9f9]'}
+                style={{ display: 'block', background: 'var(--color-bg-alt)' }}
                 style={{ display: 'block' }}
             >
                 <defs>
@@ -401,7 +384,7 @@ export default React.memo(function Map(props) {
                             cx="2"
                             cy="2"
                             r="0.9"
-                            fill={theme.dottedPatternFill}
+                            fill={colors.dottedPatternFill}
                             opacity={darkThemeEnabled ? 0.3 : 0.6}
                         />
                     </pattern>
@@ -411,8 +394,8 @@ export default React.memo(function Map(props) {
                         cy="50%"
                         r="50%"
                     >
-                        <stop offset="0%" stopColor={theme.auroraInner} />
-                        <stop offset="100%" stopColor={theme.auroraOuter} />
+                        <stop offset="0%" stopColor={colors.auroraInner} />
+                        <stop offset="100%" stopColor={colors.auroraOuter} />
                     </radialGradient>
                     <filter
                         id="glowShadow"
@@ -450,7 +433,7 @@ export default React.memo(function Map(props) {
                     cx={dimensions.width / 2}
                     cy={dimensions.height / 2}
                     r={projection.scale()}
-                    fill={theme.oceanFill}
+                    fill={colors.oceanFill}
                     stroke={darkThemeEnabled ? '#113355aa' : '#56789d'}
                     strokeWidth={0.5}
                 />
@@ -459,7 +442,7 @@ export default React.memo(function Map(props) {
                     <path
                         d={pathGenerator(graticuleData)}
                         fill="none"
-                        stroke={theme.graticuleStroke}
+                        stroke={colors.graticuleStroke}
                         strokeWidth={0.3}
                         pointerEvents="none"
                     />
@@ -470,8 +453,8 @@ export default React.memo(function Map(props) {
                         <path
                             key={i}
                             d={pathGenerator(feature)}
-                            fill={theme.countryFill}
-                            stroke={theme.countryStroke}
+                            fill={colors.countryFill}
+                            stroke={colors.countryStroke}
                             strokeWidth={0.6}
                             strokeLinejoin="round"
                             strokeLinecap="round"
@@ -491,10 +474,10 @@ export default React.memo(function Map(props) {
                         d={path}
                         stroke={
                             type === 'home-to-hop'
-                                ? theme.arcStroke
+                                ? colors.arcStroke
                                 : type === 'hop-to-dest'
                                   ? 'orange'
-                                  : theme.arcStroke
+                                  : colors.arcStroke
                         }
                         strokeWidth={
                             type === 'home-to-hop' || type === 'hop-to-dest'
@@ -523,10 +506,10 @@ export default React.memo(function Map(props) {
                         top: tooltip.y + 40,
                         left: tooltip.x + 45,
                         pointerEvents: 'none',
-                        backgroundColor: theme.tooltipBg,
+                        backgroundColor: colors.tooltipBg,
                         padding: '6px 12px',
                         borderRadius: 4,
-                        color: theme.tooltipColor,
+                        color: colors.tooltipColor,
                         opacity: tooltip.visible ? 1 : 0,
                         transition: 'opacity 0.2s linear',
                         zIndex: 10000,

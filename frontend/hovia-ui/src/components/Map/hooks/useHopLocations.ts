@@ -11,16 +11,17 @@ export function useHopLocations(traceResults: any[]) {
         if (!traceResults || !traceResults.length) return;
         let isActive = true;
         const ipsToFetch = new Set<string>();
-
-        traceResults.forEach((trace) =>
-            trace.hops.forEach(({ hopIP }: { hopIP: string }) => {
-                if (hopIP && hopLocations[hopIP] === undefined)
-                    ipsToFetch.add(hopIP);
-            }),
-        );
-
+        traceResults.forEach((trace) => {
+            if (Array.isArray(trace.hops)) {
+                // <-- Safely check here
+                trace.hops.forEach(({ hopIP }: { hopIP: string }) => {
+                    if (hopIP && hopLocations[hopIP] === undefined) {
+                        ipsToFetch.add(hopIP);
+                    }
+                });
+            }
+        });
         if (!ipsToFetch.size) return;
-
         (async () => {
             const newLocations: HopLocations = {};
             for (const ip of ipsToFetch) {
@@ -43,7 +44,6 @@ export function useHopLocations(traceResults: any[]) {
             if (isActive)
                 setHopLocations((prev) => ({ ...prev, ...newLocations }));
         })();
-
         return () => {
             isActive = false;
         };

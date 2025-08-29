@@ -77,7 +77,7 @@ crow::response ApiServer::handleSettingsGet() const {
 
     res["logPath"] = settings->getLogPath();
     res["interfaceOption"] = settings->getInterfaceOption();
-    res["filter"] = settings->getFilter();
+    res["ipFilter"] = settings->getFilter();
     res["lookupMode"] = lookupModeToString(settings->getLookupMode());
     res["theme"] = themeToString(settings->getTheme());
     res["activeLanguage"] = languageToString(settings->getLanguage());
@@ -105,8 +105,8 @@ crow::response ApiServer::handleSettingsPost(const crow::request& req) {
         settings->setLogPath(body["logPath"].s());
     if (body.has("interfaceOption"))
         settings->setInterfaceOption(body["interfaceOption"].s());
-    if (body.has("filter"))
-        settings->setFilter(body["filter"].s());
+    if (body.has("ipFilter"))
+        settings->setFilter(body["ipFilter"].s());
 
     if (body.has("lookupMode")) {
         auto lm = body["lookupMode"].s();
@@ -146,8 +146,8 @@ crow::response ApiServer::handleSettingsPost(const crow::request& req) {
         settings->setAnimationToggle(body["animationToggle"].b());
     if (body.has("hasVerbose"))
         settings->setVerbose(body["hasVerbose"].b());
-    if (body.has("WebsocketPort"))
-        settings->setWebsocket(body["WebsocketPort"].i());
+    if (body.has("websocketPort"))
+        settings->setWebsocket(body["websocketPort"].i());
 
     crow::response res(200, "Settings updated");
     setCorsHeaders(res);
@@ -193,36 +193,67 @@ void ApiServer::setupHttp(crow::SimpleApp& app) {
 
 void ApiServer::startAPI() {
     m_running.store(true);
-    crow::logger::setHandler(new CrowLogBridge());
+
+    // Use static bridge so Crow logger pointer is always valid
+    static CrowLogBridge g_crowLogBridge;
+    crow::logger::setHandler(&g_crowLogBridge);
 
     if (m_ipTracker->pSettings->hasVerbose())
         Logger::getInstance().log(LogLevel::INFO, __func__,
                                   "Initialising HTTP API at port 8080");
 
+    // Start HTTP server in its own thread
     m_httpThread = std::thread([this]() {
         m_pApp = std::make_unique<crow::SimpleApp>();
         setupHttp(*m_pApp);
         m_pApp->port(8080).concurrency(1).run();
     });
 
-    boost::system::error_code ec;
-    uint16_t ws_port = m_ipTracker->pSettings->getWebsocket();
-
-    m_server.listen(ws_port, ec);
-    if (ec) {
-        Logger::getInstance().log(LogLevel::ERROR, __func__,
-                                  "Websocket server listen error:" +
-                                      ec.message());
-        return;
-    }
-
+    // ---- WebSocket setup ----
     if (m_ipTracker->pSettings->hasVerbose()) {
+        m_server.clear_access_channels(websocketpp::log::alevel::all);
         m_server.set_access_channels(websocketpp::log::alevel::none);
         m_server.set_error_channels(websocketpp::log::elevel::warn |
                                     websocketpp::log::elevel::rerror);
     } else {
+        m_server.clear_access_channels(websocketpp::log::alevel::all);
         m_server.set_access_channels(websocketpp::log::alevel::none);
         m_server.set_error_channels(websocketpp::log::elevel::none);
+    }
+
+    m_server.set_reuse_addr(true);
+    m_server.set_pong_timeout(5000);
+
+    m_server.set_open_handler([this](connHandle hdl) {
+        std::lock_guard<std::mutex> lk(m_hdlMutex);
+        if (!m_hdl.expired()) {
+            try {
+                auto con = m_server.get_con_from_hdl(m_hdl);
+                con->close(websocketpp::close::status::normal,
+                           "Replaced by new client");
+            } catch (...) {
+            }
+        }
+        m_hdl = hdl;
+    });
+
+    m_server.set_close_handler([this](connHandle) {
+        std::lock_guard<std::mutex> lk(m_hdlMutex);
+        m_hdl.reset();
+    });
+
+    m_server.set_fail_handler([this](connHandle) {
+        std::lock_guard<std::mutex> lk(m_hdlMutex);
+        m_hdl.reset();
+    });
+
+    boost::system::error_code ec;
+    uint16_t ws_port = m_ipTracker->pSettings->getWebsocket();
+    m_server.listen(ws_port, ec);
+    if (ec) {
+        Logger::getInstance().log(LogLevel::ERROR, __func__,
+                                  "Websocket listen error: " + ec.message());
+        return;
     }
 
     if (m_ipTracker->pSettings->hasVerbose())
@@ -246,17 +277,21 @@ void ApiServer::stopAPI() {
         return;
 
     try {
-        if (m_ipTracker->pSettings->hasVerbose())
-            Logger::getInstance().log(
-                LogLevel::INFO, __func__,
-                "Attempting to stop the webSocket server thread");
         if (m_server.is_listening())
             m_server.stop_listening();
         m_server.stop();
-        m_server.get_io_service().stop();
     } catch (const std::exception& e) {
         Logger::getInstance().log(LogLevel::ERROR, __func__, e.what());
     }
+
+    if (m_pApp) {
+        m_pApp->stop();
+    }
+
+    if (m_ipTracker->pSettings->hasVerbose())
+        Logger::getInstance().log(
+            LogLevel::INFO, __func__,
+            "Attempting to stop the webSocket server thread");
 
     if (m_ipTracker->pSettings->hasVerbose())
         Logger::getInstance().log(LogLevel::INFO, __func__,
@@ -271,22 +306,27 @@ void ApiServer::stopAPI() {
 }
 
 void ApiServer::sendResult(const traceResult& result) {
-    if (m_hdl.expired())
-        return;
+    connHandle local;
+    {  // copy under lock
+        std::lock_guard<std::mutex> lk(m_hdlMutex);
+        if (m_hdl.expired())
+            return;
+        local = m_hdl;
+    }
 
     json j = result;
-    std::string msg = j.dump();
+    const std::string msg = j.dump();
 
     try {
         if (m_ipTracker->pSettings->hasVerbose())
             Logger::getInstance().log(LogLevel::INFO, __func__,
-                                      "Sent message: '" + msg +
-                                          "' through websocket");
-        m_server.send(m_hdl, msg, websocketpp::frame::opcode::text);
+                                      "Sent message: '" + msg + "'");
+        m_server.send(local, msg, websocketpp::frame::opcode::text);
     } catch (const websocketpp::exception& e) {
         Logger::getInstance().log(LogLevel::ERROR, __func__,
-                                  "Websocket send error: " +
-                                      std::string(e.what()));
+                                  std::string("WS send error: ") + e.what());
+        std::lock_guard<std::mutex> lk(m_hdlMutex);
+        m_hdl.reset();  // drop broken handle so next connect is clean
     }
 }
 

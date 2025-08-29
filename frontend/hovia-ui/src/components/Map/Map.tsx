@@ -21,19 +21,22 @@ export default React.memo(function Map(props) {
         t,
     } = props;
 
-    const colors = {
-        oceanFill: 'var(--color-ocean-fill)',
-        countryFill: 'var(--color-country-fill)',
-        countryStroke: 'var(--color-country-stroke)',
-        arcStroke: 'var(--color-arc-stroke)',
-        graticuleStroke: 'var(--color-graticule-stroke)',
-        markerStroke: 'var(--color-marker-stroke)',
-        tooltipBg: 'var(--color-tooltip-bg)',
-        tooltipColor: 'var(--color-tooltip-text)',
-        dottedPatternFill: 'var(--color-dotted-pattern-fill)',
-        auroraInner: 'var(--color-aurora-inner)',
-        auroraOuter: 'var(--color-aurora-outer)',
-    };
+    const colors = React.useMemo(
+        () => ({
+            oceanFill: 'var(--color-ocean-fill)',
+            countryFill: 'var(--color-country-fill)',
+            countryStroke: 'var(--color-country-stroke)',
+            arcStroke: 'var(--color-arc-stroke)',
+            graticuleStroke: 'var(--color-graticule-stroke)',
+            markerStroke: 'var(--color-marker-stroke)',
+            tooltipBg: 'var(--color-tooltip-bg)',
+            tooltipColor: 'var(--color-tooltip-text)',
+            dottedPatternFill: 'var(--color-dotted-pattern-fill)',
+            auroraInner: 'var(--color-aurora-inner)',
+            auroraOuter: 'var(--color-aurora-outer)',
+        }),
+        [t],
+    );
 
     const containerRef = useRef<HTMLDivElement | null>(null);
     const svgRef = useRef<SVGSVGElement | null>(null);
@@ -83,13 +86,15 @@ export default React.memo(function Map(props) {
     const hopLocations = useHopLocations(traceResults);
     const minDimension = Math.min(dimensions.width, dimensions.height);
 
-    const projection = d3
-        .geoOrthographic()
-        .scale((minDimension / 2 - 40) * scale)
-        .translate([dimensions.width / 2, dimensions.height / 2])
-        .clipAngle(90)
-        .precision(0.1)
-        .rotate(rotation);
+    const projection = React.useMemo(() => {
+        return d3
+            .geoOrthographic()
+            .scale((minDimension / 2 - 40) * scale)
+            .translate([dimensions.width / 2, dimensions.height / 2])
+            .clipAngle(90)
+            .precision(0.1)
+            .rotate(rotation);
+    }, [minDimension, scale, dimensions.width, dimensions.height, rotation]);
 
     const pathGenerator = d3.geoPath(projection);
     const graticuleData = geoGraticule()();
@@ -105,37 +110,50 @@ export default React.memo(function Map(props) {
           }
         : null;
 
-    const hopMarkers: Array<any> = [];
-    traceResults.forEach((trace, i) => {
-        trace.hops.forEach((hop, idx) => {
-            const loc = hopLocations[hop.hopIP];
-            if (loc) {
-                hopMarkers.push({
-                    lat: loc.latitude,
-                    lon: loc.longitude,
-                    color: darkThemeEnabled ? '#2196f3' : '#1565c0',
-                    size: 4,
-                    label: `${t.map.hopIP}: ${hop.hopIP}\n${t.map.latency}: ${hop.latency} ms`,
-                    id: `hop-${i}-${idx}`,
+    const hopMarkers = React.useMemo(() => {
+        const markers: Array<any> = [];
+        traceResults.forEach((trace, i) => {
+            if (Array.isArray(trace.hops)) {
+                trace.hops.forEach((hop, idx) => {
+                    const loc = hopLocations[hop.hopIP];
+                    if (loc) {
+                        markers.push({
+                            lat: loc.latitude,
+                            lon: loc.longitude,
+                            color: darkThemeEnabled ? '#2196f3' : '#1565c0',
+                            size: 4,
+                            label: `${t.map.hopIP}: ${hop.hopIP}\n${t.map.latency}: ${hop.latency} ms`,
+                            id: `hop-${i}-${idx}`,
+                        });
+                    }
                 });
             }
         });
-    });
+        return markers;
+    }, [traceResults, hopLocations, darkThemeEnabled, t]);
 
-    const destMarkers: Array<any> = [];
-    traceResults.forEach((trace, i) => {
-        const d = trace.dest_info;
-        if (d.latitude !== 0 && d.longitude !== 0) {
-            destMarkers.push({
-                lat: d.latitude,
-                lon: d.longitude,
-                color: darkThemeEnabled ? '#ff7043' : '#e64a19',
-                size: 5,
-                label: `${t.map.destinationIP}: ${d.ip}\n${t.map.country}: ${d.country}\n${t.map.region}: ${d.region}\n${t.map.isp}: ${d.isp}`,
-                id: `dest-${i}`,
-            });
-        }
-    });
+    const destMarkers = React.useMemo(() => {
+        const markers: Array<any> = [];
+        traceResults.forEach((trace, i) => {
+            const d = trace.dest_info;
+            if (
+                d &&
+                typeof d.latitude === 'number' &&
+                typeof d.longitude === 'number' &&
+                (d.latitude !== 0 || d.longitude !== 0)
+            ) {
+                markers.push({
+                    lat: d.latitude,
+                    lon: d.longitude,
+                    color: darkThemeEnabled ? '#ff7043' : '#e64a19',
+                    size: 5,
+                    label: `${t.map.destinationIP}: ${d.ip}\n${t.map.country}: ${d.country}\n${t.map.region}: ${d.region}\n${t.map.isp}: ${d.isp}`,
+                    id: `dest-${i}`,
+                });
+            }
+        });
+        return markers;
+    }, [traceResults, darkThemeEnabled, t]);
 
     const projectPoint = (lat: number, lon: number) => {
         const center = [-rotation[0], -rotation[1]];
@@ -154,7 +172,7 @@ export default React.memo(function Map(props) {
             [start.lon, start.lat],
             [end.lon, end.lat],
         );
-        const numSamples = 20;
+        const numSamples = 15;
         let visiblePoints: Array<[number, number]> = [];
         let pathSegments: Array<Array<[number, number]>> = [];
 
@@ -180,44 +198,54 @@ export default React.memo(function Map(props) {
 
     const center = [-rotation[0], -rotation[1]] as [number, number];
 
-    const arcsPaths: Array<{ path: string; type: string }> = [];
-    traceResults.forEach((trace) => {
-        const coords: Array<{ lat: number; lon: number }> = [];
-
-        if (
-            userLocation &&
-            userLocation.lat !== undefined &&
-            userLocation.lon !== undefined
-        ) {
-            coords.push({ lat: userLocation.lat, lon: userLocation.lon });
-        }
-
-        trace.hops.forEach((hop) => {
-            const loc = hopLocations[hop.hopIP];
-            if (loc) coords.push({ lat: loc.latitude, lon: loc.longitude });
+    const arcsPaths = React.useMemo(() => {
+        const paths: Array<{ path: string; type: string }> = [];
+        traceResults.forEach((trace) => {
+            const coords: Array<{ lat: number; lon: number }> = [];
+            if (
+                userLocation &&
+                userLocation.lat !== undefined &&
+                userLocation.lon !== undefined
+            ) {
+                coords.push({ lat: userLocation.lat, lon: userLocation.lon });
+            }
+            if (Array.isArray(trace.hops)) {
+                trace.hops.forEach((hop) => {
+                    const loc = hopLocations[hop.hopIP];
+                    if (loc)
+                        coords.push({ lat: loc.latitude, lon: loc.longitude });
+                });
+            }
+            if (
+                trace.dest_info &&
+                trace.dest_info.latitude !== 0 &&
+                trace.dest_info.longitude !== 0
+            ) {
+                coords.push({
+                    lat: trace.dest_info.latitude,
+                    lon: trace.dest_info.longitude,
+                });
+            }
+            for (let i = 0; i < coords.length - 1; i++) {
+                const start = coords[i];
+                const end = coords[i + 1];
+                const type =
+                    i === 0
+                        ? 'home-to-hop'
+                        : i === coords.length - 2
+                          ? 'hop-to-dest'
+                          : 'hop-to-hop';
+                const segments = createArcPath(start, end, [
+                    -rotation[0],
+                    -rotation[1],
+                ]);
+                segments.forEach((segment) =>
+                    paths.push({ path: segment, type }),
+                );
+            }
         });
-
-        if (trace.dest_info.latitude !== 0 && trace.dest_info.longitude !== 0) {
-            coords.push({
-                lat: trace.dest_info.latitude,
-                lon: trace.dest_info.longitude,
-            });
-        }
-        for (let i = 0; i < coords.length - 1; i++) {
-            const start = coords[i];
-            const end = coords[i + 1];
-            const type =
-                i === 0
-                    ? 'home-to-hop'
-                    : i === coords.length - 2
-                      ? 'hop-to-dest'
-                      : 'hop-to-hop';
-            const segments = createArcPath(start, end, center);
-            segments.forEach((segment) =>
-                arcsPaths.push({ path: segment, type }),
-            );
-        }
-    });
+        return paths;
+    }, [traceResults, hopLocations, userLocation, rotation]);
 
     const allMarkers = [
         ...hopMarkers,
@@ -237,8 +265,33 @@ export default React.memo(function Map(props) {
 
         const [x, y] = coords as [number, number];
 
-        const handlePointerEnter = (e: React.PointerEvent) => {
-            if (isDraggingRef.current || dragRef.current.active) return;
+        const handlePointerEnter = React.useCallback(
+            (e: React.PointerEvent) => {
+                if (isDraggingRef.current || dragRef.current.active) return;
+                hoveredMarkerRef.current = marker.id;
+                setTooltip({
+                    visible: true,
+                    x: x + 8,
+                    y: y - 20,
+                    content: marker.label,
+                });
+            },
+            [marker.id, x, y, marker.label, setTooltip, isDraggingRef],
+        );
+
+        const handlePointerLeave = React.useCallback(() => {
+            if (hoveredMarkerRef.current === marker.id) {
+                hoveredMarkerRef.current = null;
+            }
+            setTooltip((t) => ({ ...t, visible: false }));
+        }, [marker.id, setTooltip, hoveredMarkerRef]);
+
+        const handlePointerDown = React.useCallback(() => {
+            hoveredMarkerRef.current = null;
+            setTooltip((t) => ({ ...t, visible: false }));
+        }, [setTooltip, hoveredMarkerRef]);
+
+        const handleFocus = React.useCallback(() => {
             hoveredMarkerRef.current = marker.id;
             setTooltip({
                 visible: true,
@@ -246,29 +299,14 @@ export default React.memo(function Map(props) {
                 y: y - 20,
                 content: marker.label,
             });
-        };
+        }, [marker.id, x, y, marker.label, setTooltip, hoveredMarkerRef]);
 
-        const handlePointerLeave = () => {
-            if (hoveredMarkerRef.current === marker.id)
+        const handleBlur = React.useCallback(() => {
+            if (hoveredMarkerRef.current === marker.id) {
                 hoveredMarkerRef.current = null;
+            }
             setTooltip((t) => ({ ...t, visible: false }));
-        };
-
-        const handleFocus = () => {
-            hoveredMarkerRef.current = marker.id;
-            setTooltip({
-                visible: true,
-                x: x + 8,
-                y: y - 20,
-                content: marker.label,
-            });
-        };
-
-        const handleBlur = () => {
-            if (hoveredMarkerRef.current === marker.id)
-                hoveredMarkerRef.current = null;
-            setTooltip((t) => ({ ...t, visible: false }));
-        };
+        }, [marker.id, setTooltip, hoveredMarkerRef]);
 
         return (
             <circle
@@ -287,10 +325,7 @@ export default React.memo(function Map(props) {
                 cursor="pointer"
                 onPointerEnter={handlePointerEnter}
                 onPointerLeave={handlePointerLeave}
-                onPointerDown={() => {
-                    hoveredMarkerRef.current = null;
-                    setTooltip((t) => ({ ...t, visible: false }));
-                }}
+                onPointerDown={handlePointerDown}
                 onFocus={handleFocus}
                 onBlur={handleBlur}
                 aria-label={marker.label}
@@ -355,8 +390,7 @@ export default React.memo(function Map(props) {
                     'Interactive globe map showing network routes'
                 }
                 shapeRendering="geometricPrecision"
-                style={{ display: 'block', background: 'var(--color-bg-alt)' }}
-                style={{ display: 'block' }}
+                style={{ display: 'block', background: 'var(--color-bg)' }}
             >
                 <defs>
                     <filter

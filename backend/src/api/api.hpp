@@ -46,6 +46,7 @@ class ApiServer {
 
         server m_server;
         connHandle m_hdl;
+        std::mutex m_hdlMutex;
 
         std::thread m_sendThread;
         std::thread m_wsThread;

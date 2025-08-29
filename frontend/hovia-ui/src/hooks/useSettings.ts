@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 
 export interface SettingsType {
-    tracerouteTimeout?: number;
+    timeout?: number;
     animationToggle?: boolean;
-    verboseLogging?: boolean;
+    hasVerbose?: boolean;
     logPath?: string;
     interfaceOption?: 'Auto' | string;
     ipFilter?: string;
     lookupMode?: 'Auto' | 'API' | 'DB';
-    language?: 'English' | 'Spanish' | 'Greek';
+    activeLanguage?: 'English' | 'Spanish' | 'Greek';
     theme?: 'Light' | 'Dark' | 'Auto';
     maxHops?: number;
-    WebsocketPort?: number;
+    websocketPort?: number;
 }
 
 export default function useSettings() {

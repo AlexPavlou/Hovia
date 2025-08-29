@@ -14,4 +14,12 @@ export default defineConfig({
             '@i18n': '/src/i18n.ts',
         },
     },
+    server: {
+        proxy: {
+            '/api': {
+                target: 'http://localhost:8080',
+                changeOrigin: true,
+            },
+        },
+    },
 });

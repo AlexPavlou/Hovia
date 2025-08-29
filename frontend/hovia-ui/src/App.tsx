@@ -4,23 +4,22 @@ import Map from '@components/Map/Map';
 import Settings from '@components/Settings';
 import SettingsNotConnected from '@components/SettingsNotConnected';
 import useSettings from '@hooks/useSettings';
-import useTheme from '@hooks/useTheme';
+import { useTheme } from './ThemeContext';
 import useWebSocket from '@hooks/useWebSocket';
 import translations from '@i18n';
 
 function App() {
     const [settings, setSettings, isLoading] = useSettings();
-    const { theme, toggleTheme } = useTheme(settings);
+    const { theme, darkThemeEnabled, toggleTheme } = useTheme();
     const [traceResults, setTraceResults] = useState([]);
     const [selectedPage, setSelectedPage] = useState('map');
 
-    useWebSocket(settings?.WebsocketPort, (newData) =>
-        setTraceResults((prev) =>
-            prev.length + newData.length > 200
-                ? [...prev, ...newData].slice(-200)
-                : [...prev, ...newData],
-        ),
-    );
+    useWebSocket(settings?.websocketPort, (newData) => {
+        setTraceResults((prev) => {
+            const updated = [...prev, newData];
+            return updated.length > 200 ? updated.slice(-200) : updated;
+        });
+    });
 
     const activeLanguage = settings?.activeLanguage?.toUpperCase() || 'ENGLISH';
     const t = translations[activeLanguage] || translations.ENGLISH;
@@ -47,14 +46,8 @@ function App() {
         }),
         [traceResults, theme, settings, t],
     );
-
-    // Now conditionally return UI after all hooks/vars declared
     if (isLoading) {
-        return (
-            <div className="flex items-center justify-center h-screen bg-[#222]">
-                {/* Loading spinner UI */}
-            </div>
-        );
+        return;
     }
 
     if (!settings) return <SettingsNotConnected />;

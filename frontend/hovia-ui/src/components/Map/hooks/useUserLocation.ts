@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 
-export function useUserLocation(override) {
-    const [location, setLocation] = useState(null);
+export function useUserLocation(override: any) {
+    const [location, setLocation] = useState<{
+        lat: number;
+        lon: number;
+    } | null>(null);
 
     useEffect(() => {
         if (override) {
@@ -9,7 +12,6 @@ export function useUserLocation(override) {
             return;
         }
 
-        // Fetch location from free API
         fetch('http://ip-api.com/json/')
             .then((response) => response.json())
             .then((data) => {

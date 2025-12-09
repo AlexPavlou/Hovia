@@ -1,4 +1,45 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+    TextInput,
+    NumberInput,
+    Select,
+    Switch,
+    Button,
+    Group,
+    Title,
+    Box,
+    Text,
+    Loader,
+    Alert,
+    Container,
+    Divider,
+} from '@mantine/core';
+import { InfoTooltip } from './InfoTooltip';
+
+const HelpIcon = ({
+    size,
+    style,
+}: {
+    size?: number;
+    style?: React.CSSProperties;
+}) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 24}
+        height={size || 24}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={style}
+    >
+        <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+);
 
 interface SettingsProps {
     settings: any;
@@ -6,34 +47,75 @@ interface SettingsProps {
     t: any;
 }
 
+const Field = ({
+    label,
+    node,
+    tooltip,
+}: {
+    label: string;
+    node: React.ReactNode;
+    tooltip?: string;
+}) => (
+    <Group
+        justify="space-between"
+        align="center"
+        mb="sm"
+        w="100%"
+        wrap="nowrap"
+    >
+        <Group
+            gap="xs"
+            style={{
+                flex: 1,
+                minWidth: 0,
+                paddingRight: '16px',
+            }}
+        >
+            <Text
+                size="sm"
+                fw={500}
+                style={{ lineHeight: 1.4, color: 'inherit' }}
+            >
+                {label}
+            </Text>
+
+            {tooltip && (
+                <InfoTooltip label={tooltip}>
+                    <HelpIcon size={15} />
+                </InfoTooltip>
+            )}
+        </Group>
+
+        <Box w={250} style={{ flexShrink: 0 }}>
+            {node}
+        </Box>
+    </Group>
+);
+
 export default function Settings({ settings, setSettings, t }: SettingsProps) {
     const [localSettings, setLocalSettings] = useState<any>(null);
-    const [interfaces, setInterfaces] = useState<{ name: string }[]>([]);
+    const [interfaces, setInterfaces] = useState<string[]>([]);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
-    const refs: Record<string, React.RefObject<HTMLDivElement>> = {
-        general: useRef(null),
-        network: useRef(null),
-        advanced: useRef(null),
-        misc: useRef(null),
-    };
-
-    // Load initial settings
     useEffect(() => {
         if (settings) setLocalSettings({ ...settings });
     }, [settings]);
 
-    // Load network interfaces
     useEffect(() => {
         fetch('/api/interfaces')
             .then(async (res) => {
                 const data = await res.json();
-                setInterfaces(data.filter((i) => i.name?.trim()));
+                setInterfaces(data.filter((i: string) => i.trim()));
             })
             .catch(() => setInterfaces([]));
     }, []);
+
+    const isModified = useMemo(() => {
+        if (!settings || !localSettings) return false;
+        return JSON.stringify(settings) !== JSON.stringify(localSettings);
+    }, [settings, localSettings]);
 
     const updateField = (field: string, value: any) => {
         setLocalSettings((prev: any) => ({ ...prev, [field]: value }));
@@ -65,55 +147,19 @@ export default function Settings({ settings, setSettings, t }: SettingsProps) {
 
     if (!localSettings) {
         return (
-            <div className="flex items-center justify-center h-screen text-white bg-[#222]">
-                {t.loading || 'Loading...'}
-            </div>
+            <Container
+                style={{
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                <Loader size="lg" />
+                <Text ml="md">{t.loading || 'Loading...'}</Text>
+            </Container>
         );
     }
-
-    const scrollTo = (key: string) => {
-        refs[key].current?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
-        });
-    };
-
-    // --- FIELD COMPONENT WITH TOOLTIP ---
-    const Field = ({
-        label,
-        valueNode,
-        tooltip,
-    }: {
-        label: string;
-        valueNode: React.ReactNode;
-        tooltip?: string;
-    }) => (
-        <div className="flex items-center justify-between mb-4 w-full">
-            <div className="flex items-center space-x-2 w-1/3 text-sm font-medium">
-                {label}
-                {tooltip && (
-                    <div
-                        className="relative group"
-                        style={{ paddingLeft: '0.5rem' }}
-                    >
-                        <div className="w-5 h-5 rounded-full bg-[#444] flex items-center justify-center text-xs text-white cursor-pointer">
-                            ?
-                        </div>
-                        <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#333] text-white text-xs rounded py-1 px-2 whitespace-nowrap shadow-lg z-50">
-                            {tooltip}
-                        </div>
-                    </div>
-                )}
-            </div>
-            <div className="flex-grow">{valueNode}</div>
-        </div>
-    );
-
-    const inputClass =
-        'input input-sm input-bordered w-full max-w-[200px] bg-[#333] text-white border-gray-600 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all';
-    const selectClass =
-        'select select-sm select-bordered w-full max-w-[200px] bg-[#333] text-white border-gray-600 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all';
-    const toggleClass = 'toggle toggle-sm toggle-primary';
 
     const categories = [
         {
@@ -123,80 +169,76 @@ export default function Settings({ settings, setSettings, t }: SettingsProps) {
                 {
                     label: t.tracerouteTimeout || 'Traceroute Timeout',
                     node: (
-                        <input
-                            type="number"
+                        <NumberInput
+                            w="100%"
+                            value={localSettings.timeout}
+                            onChange={(val) => updateField('timeout', val)}
                             min={0}
                             max={255}
-                            value={localSettings.timeout ?? ''}
-                            onChange={(e) =>
-                                updateField(
-                                    'timeout',
-                                    Math.min(
-                                        255,
-                                        Math.max(
-                                            0,
-                                            Number(e.target.value) || 0,
-                                        ),
-                                    ),
-                                )
-                            }
+                            clampBehavior="strict"
                             placeholder="0-255 ms"
-                            className={inputClass}
                         />
                     ),
                     tooltip:
                         t.tracerouteTimeoutInfo ||
-                        'Timeout in seconds for traceroute requests (default: 1s)',
+                        'Timeout in seconds for traceroute requests',
                 },
                 {
-                    label: t.animationToggle || 'Animation Toggle',
+                    label: t.animationToggle || 'Animation',
                     node: (
-                        <input
-                            type="checkbox"
-                            checked={!!localSettings.animationToggle}
-                            onChange={(e) =>
-                                updateField('animationToggle', e.target.checked)
-                            }
-                            className={toggleClass}
-                        />
+                        <Group justify="flex-end" w="100%">
+                            <Switch
+                                checked={!!localSettings.animationToggle}
+                                onChange={(e) =>
+                                    updateField(
+                                        'animationToggle',
+                                        e.currentTarget.checked,
+                                    )
+                                }
+                                size="md"
+                                style={{ cursor: 'pointer' }}
+                            />
+                        </Group>
                     ),
                     tooltip:
                         t.animationToggleInfo ||
-                        'Enable or disable animations (default: On)',
+                        'Enable or disable UI animations',
                 },
                 {
                     label: t.verboseLogging || 'Verbose Logging',
                     node: (
-                        <input
-                            type="checkbox"
-                            checked={!!localSettings.hasVerbose}
-                            onChange={(e) =>
-                                updateField('hasVerbose', e.target.checked)
-                            }
-                            className={toggleClass}
-                        />
+                        <Group justify="flex-end" w="100%">
+                            <Switch
+                                checked={!!localSettings.hasVerbose}
+                                onChange={(e) =>
+                                    updateField(
+                                        'hasVerbose',
+                                        e.currentTarget.checked,
+                                    )
+                                }
+                                size="md"
+                                style={{ cursor: 'pointer' }}
+                            />
+                        </Group>
                     ),
                     tooltip:
                         t.verboseLoggingInfo ||
-                        'Enable or disable verbose logging (default: Off)',
+                        'Enable detailed system logging',
                 },
                 {
                     label: t.logPath || 'Log Path',
                     node: (
-                        <input
-                            type="text"
-                            value={localSettings.logPath ?? ''}
+                        <TextInput
+                            w="100%"
+                            value={localSettings.logPath || ''}
                             onChange={(e) =>
-                                updateField('logPath', e.target.value)
+                                updateField('logPath', e.currentTarget.value)
                             }
-                            placeholder={
-                                t.logPathPlaceholder ||
-                                'Enter log file path (default: app.log)'
-                            }
-                            className={inputClass}
+                            placeholder="app.log"
                         />
                     ),
-                    tooltip: t.logPathInfo || 'File path for logs',
+                    tooltip:
+                        t.logPathInfo || 'Absolute path for log file storage',
                 },
             ],
         },
@@ -207,86 +249,80 @@ export default function Settings({ settings, setSettings, t }: SettingsProps) {
                 {
                     label: t.interfaceOption || 'Interface',
                     node: (
-                        <select
+                        <Select
+                            w="100%"
                             value={localSettings.interfaceOption || 'Auto'}
-                            onChange={(e) =>
-                                updateField('interfaceOption', e.target.value)
+                            onChange={(val) =>
+                                updateField('interfaceOption', val)
                             }
-                            className={selectClass}
-                        >
-                            <option value="Auto">{t.auto || 'Auto'}</option>
-                            {interfaces.map(({ name }) => (
-                                <option key={name} value={name}>
-                                    {name}
-                                </option>
-                            ))}
-                        </select>
+                            data={[
+                                ...interfaces.map((i) => ({
+                                    value: i,
+                                    label: i,
+                                })),
+                                { value: 'Auto', label: t.auto || 'Auto' },
+                            ]}
+                            checkIconPosition="right"
+                        />
                     ),
                     tooltip:
                         t.interfaceOptionInfo ||
-                        'Set default network interface for packet capture (default: Auto)',
+                        'Default packet capture interface',
                 },
                 {
                     label: t.ipFilter || 'IP Filter',
                     node: (
-                        <input
-                            type="text"
-                            value={localSettings.ipFilter ?? ''}
+                        <TextInput
+                            w="100%"
+                            value={localSettings.ipFilter || ''}
                             onChange={(e) =>
-                                updateField('ipFilter', e.target.value)
+                                updateField('ipFilter', e.currentTarget.value)
                             }
-                            placeholder={
-                                t.ipFilterPlaceholder || 'Enter IP filter'
-                            }
-                            className={inputClass}
+                            placeholder="e.g. 192.168.1.1"
                         />
                     ),
-                    tooltip: t.ipFilterInfo || 'IP packet filter',
+                    tooltip:
+                        t.ipFilterInfo ||
+                        'Filter traffic through libpcap parameters',
                 },
                 {
                     label: t.lookupMode || 'Lookup Mode',
                     node: (
-                        <select
+                        <Select
+                            w="100%"
                             value={localSettings.lookupMode || 'Auto'}
-                            onChange={(e) =>
-                                updateField('lookupMode', e.target.value)
-                            }
-                            className={selectClass}
-                        >
-                            <option value="Auto">{t.auto || 'Auto'}</option>
-                            <option value="API">{t.api || 'API'}</option>
-                            <option value="DB">{t.db || 'DB'}</option>
-                        </select>
+                            onChange={(val) => updateField('lookupMode', val)}
+                            data={[
+                                { value: 'Auto', label: t.auto || 'Auto' },
+                                { value: 'API', label: t.api || 'API' },
+                                { value: 'DB', label: t.db || 'DB' },
+                            ]}
+                            checkIconPosition="right"
+                        />
                     ),
-                    tooltip: t.lookupModeInfo || 'Select method for IP lookups',
+                    tooltip:
+                        t.lookupModeInfo ||
+                        'Method used for IP geolocation lookups',
                 },
                 {
                     label: t.WebsocketPort || 'WebSocket Port',
                     node: (
-                        <input
-                            type="number"
+                        <NumberInput
+                            w="100%"
+                            value={localSettings.websocketPort}
+                            onChange={(val) =>
+                                updateField('websocketPort', val)
+                            }
                             min={0}
                             max={65535}
-                            value={localSettings.websocketPort ?? ''}
-                            onChange={(e) =>
-                                updateField(
-                                    'websocketPort',
-                                    Math.min(
-                                        65535,
-                                        Math.max(
-                                            0,
-                                            Number(e.target.value) || 0,
-                                        ),
-                                    ),
-                                )
-                            }
-                            placeholder="0-65535"
-                            className={inputClass}
+                            clampBehavior="strict"
+                            placeholder="9002"
+                            allowDecimal={false}
                         />
                     ),
                     tooltip:
                         t.WebsocketPortInfo ||
-                        'Port used for WebSocket connections (default: 9002)',
+                        'Port for real-time data connections',
                 },
             ],
         },
@@ -297,63 +333,58 @@ export default function Settings({ settings, setSettings, t }: SettingsProps) {
                 {
                     label: t.maxHops || 'Max Hops',
                     node: (
-                        <input
-                            type="number"
+                        <NumberInput
+                            w="100%"
+                            value={localSettings.maxHops}
+                            onChange={(val) => updateField('maxHops', val)}
                             min={0}
                             max={255}
-                            value={localSettings.maxHops ?? ''}
-                            onChange={(e) =>
-                                updateField(
-                                    'maxHops',
-                                    Math.min(
-                                        255,
-                                        Math.max(
-                                            0,
-                                            Number(e.target.value) || 0,
-                                        ),
-                                    ),
-                                )
-                            }
-                            placeholder="0-255"
-                            className={inputClass}
+                            clampBehavior="strict"
+                            placeholder="30"
+                            allowDecimal={false}
                         />
                     ),
-                    tooltip: t.maxHopsInfo || 'Maximum hops for traceroute',
+                    tooltip:
+                        t.maxHopsInfo || 'Maximum TTL for traceroute packets',
                 },
                 {
                     label: t.theme || 'Theme',
                     node: (
-                        <select
+                        <Select
+                            w="100%"
                             value={localSettings.theme || 'Auto'}
-                            onChange={(e) =>
-                                updateField('theme', e.target.value)
-                            }
-                            className={selectClass}
-                        >
-                            <option value="Light">{t.light || 'Light'}</option>
-                            <option value="Dark">{t.dark || 'Dark'}</option>
-                            <option value="Auto">{t.auto || 'Auto'}</option>
-                        </select>
+                            onChange={(val) => updateField('theme', val)}
+                            data={[
+                                { value: 'Light', label: t.light || 'Light' },
+                                { value: 'Dark', label: t.dark || 'Dark' },
+                                { value: 'Auto', label: t.auto || 'Auto' },
+                            ]}
+                            checkIconPosition="right"
+                        />
                     ),
                 },
                 {
                     label: t.activeLanguage || 'Language',
                     node: (
-                        <select
+                        <Select
+                            w="100%"
                             value={localSettings.activeLanguage || 'English'}
-                            onChange={(e) =>
-                                updateField('activeLanguage', e.target.value)
+                            onChange={(val) =>
+                                updateField('activeLanguage', val)
                             }
-                            className={selectClass}
-                        >
-                            <option value="English">
-                                {t.english || 'English'}
-                            </option>
-                            <option value="Spanish">
-                                {t.spanish || 'Spanish'}
-                            </option>
-                            <option value="Greek">{t.greek || 'Greek'}</option>
-                        </select>
+                            data={[
+                                {
+                                    value: 'English',
+                                    label: t.english || 'English',
+                                },
+                                {
+                                    value: 'Spanish',
+                                    label: t.spanish || 'Spanish',
+                                },
+                                { value: 'Greek', label: t.greek || 'Greek' },
+                            ]}
+                            checkIconPosition="right"
+                        />
                     ),
                 },
             ],
@@ -361,66 +392,93 @@ export default function Settings({ settings, setSettings, t }: SettingsProps) {
     ];
 
     return (
-        <main className="bg-[#222] text-white min-h-screen p-6 font-sans overflow-y-auto">
-            {/* Top Tabs */}
-            <div className="flex gap-4 mb-6 sticky top-0 z-20 bg-[#222] px-4 py-2 border-b border-[#444]">
-                {categories.map((cat) => (
-                    <button
-                        key={cat.key}
-                        type="button"
-                        className="btn btn-sm btn-outline btn-primary transition-all hover:scale-105"
-                        onClick={() => scrollTo(cat.key)}
-                    >
-                        {cat.title}
-                    </button>
-                ))}
-            </div>
+        <Box h="100%" style={{ overflowY: 'auto' }}>
+            <Container size="md" py="xl" pb={100}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        if (!saving) saveSettings();
+                    }}
+                >
+                    {categories.map((cat, index) => (
+                        <Box key={cat.key} mb={50}>
+                            <Title
+                                order={5}
+                                mb="lg"
+                                fw={600}
+                                c="dimmed"
+                                tt="uppercase"
+                                ls={1}
+                            >
+                                {cat.title}
+                            </Title>
 
-            <form
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    if (!saving) saveSettings();
-                }}
-                className="space-y-6"
-            >
-                {categories.map((cat) => (
-                    <section key={cat.key} ref={refs[cat.key]}>
-                        <h2 className="text-lg font-semibold mb-4 border-b border-gray-600 pb-1">
-                            {cat.title}
-                        </h2>
-                        {cat.fields.map((f, i) => (
-                            <Field
-                                key={i}
-                                label={f.label}
-                                valueNode={f.node}
-                                tooltip={f.tooltip}
-                            />
-                        ))}
-                    </section>
-                ))}
+                            <Box pl={2}>
+                                {cat.fields.map((f, i) => (
+                                    <Field
+                                        key={i}
+                                        label={f.label}
+                                        node={f.node}
+                                        tooltip={f.tooltip}
+                                    />
+                                ))}
+                            </Box>
 
-                {(error || success) && (
-                    <div className="text-center mb-4">
-                        <span
-                            className={`font-semibold ${error ? 'text-error' : 'text-success'}`}
-                        >
-                            {error || success}
-                        </span>
-                    </div>
-                )}
+                            {index !== categories.length - 1 && (
+                                <Divider my="xl" variant="dashed" />
+                            )}
+                        </Box>
+                    ))}
 
-                <div className="flex justify-end">
-                    <button
-                        type="submit"
-                        className={`btn btn-soft btn-primary ${saving ? 'loading' : ''}`}
-                        disabled={saving}
-                    >
-                        {saving
-                            ? t.saving || 'Saving...'
-                            : t.saveButton || 'Save'}
-                    </button>
-                </div>
-            </form>
-        </main>
+                    <Box mt={30}>
+                        {error && (
+                            <Alert
+                                color="red"
+                                title="Error"
+                                mb="md"
+                                variant="light"
+                                withCloseButton
+                                onClose={() => setError(null)}
+                            >
+                                {error}
+                            </Alert>
+                        )}
+                        {success && (
+                            <Alert
+                                color="green"
+                                title="Success"
+                                mb="md"
+                                variant="light"
+                                withCloseButton
+                                onClose={() => setSuccess(null)}
+                            >
+                                {success}
+                            </Alert>
+                        )}
+
+                        <Group justify="flex-end" pt="lg">
+                            <Button
+                                variant="default"
+                                onClick={() => setSettings(settings)}
+                                disabled={saving}
+                            >
+                                {t.cancel || 'Cancel'}
+                            </Button>
+
+                            <Button
+                                type="submit"
+                                loading={saving}
+                                px="xl"
+                                disabled={!isModified || saving}
+                            >
+                                {saving
+                                    ? t.saving || 'Saving...'
+                                    : t.saveButton || 'Save Changes'}
+                            </Button>
+                        </Group>
+                    </Box>
+                </form>
+            </Container>
+        </Box>
     );
 }

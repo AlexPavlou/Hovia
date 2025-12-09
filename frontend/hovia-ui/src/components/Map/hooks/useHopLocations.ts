@@ -11,9 +11,9 @@ export function useHopLocations(traceResults: any[]) {
         if (!traceResults || !traceResults.length) return;
         let isActive = true;
         const ipsToFetch = new Set<string>();
+
         traceResults.forEach((trace) => {
             if (Array.isArray(trace.hops)) {
-                // <-- Safely check here
                 trace.hops.forEach(({ hopIP }: { hopIP: string }) => {
                     if (hopIP && hopLocations[hopIP] === undefined) {
                         ipsToFetch.add(hopIP);
@@ -21,12 +21,16 @@ export function useHopLocations(traceResults: any[]) {
                 });
             }
         });
+
         if (!ipsToFetch.size) return;
+
         (async () => {
             const newLocations: HopLocations = {};
-            for (const ip of ipsToFetch) {
+            // Process in chunks or parallel limits if needed, but simple loop for now
+            for (const ip of Array.from(ipsToFetch)) {
                 if (!isActive) break;
                 try {
+                    // Note: Ensure your API endpoint supports CORS or use a proxy
                     const res = await fetch(`http://ip-api.com/json/${ip}`);
                     const json = await res.json();
                     if (json.status === 'success') {
@@ -44,6 +48,7 @@ export function useHopLocations(traceResults: any[]) {
             if (isActive)
                 setHopLocations((prev) => ({ ...prev, ...newLocations }));
         })();
+
         return () => {
             isActive = false;
         };

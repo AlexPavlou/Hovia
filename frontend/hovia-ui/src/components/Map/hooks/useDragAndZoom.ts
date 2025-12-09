@@ -1,30 +1,26 @@
-// hook to enable drag, zoom and momentum for the globe
 import { useEffect } from 'react';
 import * as d3 from 'd3';
 
 export function useDragAndZoom(
-    svgRef: React.RefObject<SVGSVGElement>,
+    canvasRef: React.RefObject<HTMLCanvasElement>,
     dragRef: React.MutableRefObject<any>,
     isDraggingRef: React.MutableRefObject<boolean>,
     setTooltip: React.Dispatch<any>,
-    setRotation: React.Dispatch<React.SetStateAction<[number, number]>>,
-    setScale: React.Dispatch<React.SetStateAction<number>>,
-    hoveredMarkerRef: React.MutableRefObject<string | null>,
+    stateRef: React.MutableRefObject<any>,
 ) {
     useEffect(() => {
-        if (!svgRef.current) return;
-        const svgEl = svgRef.current;
-        const svg = d3.select(svgEl);
+        if (!canvasRef.current) return;
+        const canvasEl = canvasRef.current;
+        const selection = d3.select(canvasEl);
 
-        // Drag sensitivity + momentum constants
-        const sensitivityX = 0.15;
-        const sensitivityY = 0.11;
+        const sensitivityX = 0.25;
+        const sensitivityY = 0.2;
         const FRICTION = 0.96;
         const MIN_VEL = 0.001;
 
         function pointerDown(e: PointerEvent) {
             e.preventDefault();
-            (e.target as Element).setPointerCapture?.(e.pointerId);
+            canvasEl.setPointerCapture?.(e.pointerId);
             dragRef.current = {
                 active: true,
                 lastX: e.clientX,
@@ -33,8 +29,9 @@ export function useDragAndZoom(
                 velocityY: 0,
             };
             isDraggingRef.current = true;
-            hoveredMarkerRef.current = null;
+            stateRef.current.hoveredMarker = null;
             setTooltip((t: any) => ({ ...t, visible: false }));
+            canvasEl.style.cursor = 'grabbing';
         }
 
         function pointerMove(e: PointerEvent) {
@@ -47,12 +44,12 @@ export function useDragAndZoom(
             dragRef.current.lastX = e.clientX;
             dragRef.current.lastY = e.clientY;
 
-            setRotation(([lambda, phi]) => {
-                const nl = lambda + dx * sensitivityX;
-                let np = phi - dy * sensitivityY;
-                np = Math.max(-90, Math.min(90, np));
-                return [nl, np];
-            });
+            // Update ref directly
+            const [lambda, phi] = stateRef.current.rotation;
+            const nl = lambda + dx * sensitivityX;
+            let np = phi - dy * sensitivityY;
+            np = Math.max(-90, Math.min(90, np));
+            stateRef.current.rotation = [nl, np];
 
             dragRef.current.velocityX = dx * sensitivityX;
             dragRef.current.velocityY = dy * sensitivityY;
@@ -60,56 +57,41 @@ export function useDragAndZoom(
 
         function pointerUp(e: PointerEvent) {
             try {
-                (e.target as Element).releasePointerCapture?.(e.pointerId);
+                canvasEl.releasePointerCapture?.(e.pointerId);
             } catch {}
             dragRef.current.active = false;
             isDraggingRef.current = false;
-            hoveredMarkerRef.current = null;
+            stateRef.current.hoveredMarker = null;
             setTooltip((t: any) => ({ ...t, visible: false }));
+            canvasEl.style.cursor = 'grab';
         }
 
-        function checkHoveredMarker(e: PointerEvent) {
-            const currentId = hoveredMarkerRef?.current;
-            if (!currentId) return;
-            const el = document.elementFromPoint(
-                e.clientX,
-                e.clientY,
-            ) as HTMLElement | null;
-            const hitId =
-                el
-                    ?.closest('[data-marker-id]')
-                    ?.getAttribute('data-marker-id') || null;
-            if (hitId !== currentId) {
-                hoveredMarkerRef.current = null;
-                setTooltip((t: any) => ({ ...t, visible: false }));
-            }
-        }
-
-        svgEl.addEventListener('pointerdown', pointerDown);
+        canvasEl.addEventListener('pointerdown', pointerDown);
         window.addEventListener('pointermove', pointerMove);
         window.addEventListener('pointerup', pointerUp);
         window.addEventListener('pointercancel', pointerUp);
-        window.addEventListener('pointermove', checkHoveredMarker);
 
         const zoomBehavior = d3
-            .zoom<SVGSVGElement, unknown>()
+            .zoom<HTMLCanvasElement, unknown>()
             .scaleExtent([0.3, 6])
             .filter((event) => event.type === 'wheel')
             .on('zoom', (event) => {
                 setTooltip((t: any) => ({ ...t, visible: false }));
                 isDraggingRef.current = true;
-                setScale(event.transform.k);
-                clearTimeout((svgEl as any).__wheelTimeout);
-                (svgEl as any).__wheelTimeout = setTimeout(() => {
+
+                // Update scale ref directly
+                stateRef.current.scale = event.transform.k;
+
+                clearTimeout((canvasEl as any).__wheelTimeout);
+                (canvasEl as any).__wheelTimeout = setTimeout(() => {
                     isDraggingRef.current = false;
                 }, 200);
             });
 
-        svg.call(zoomBehavior);
+        selection.call(zoomBehavior);
 
         let rafId: number | null = null;
 
-        // apply momentum / inertia after drag release
         function momentumLoop() {
             if (dragRef.current.active || isDraggingRef.current) {
                 rafId = requestAnimationFrame(momentumLoop);
@@ -129,12 +111,11 @@ export function useDragAndZoom(
                 return;
             }
 
-            setRotation(([lambda, phi]) => {
-                const nl = lambda + dragRef.current.velocityX;
-                let np = phi - dragRef.current.velocityY;
-                np = Math.max(-90, Math.min(90, np));
-                return [nl, np];
-            });
+            const [lambda, phi] = stateRef.current.rotation;
+            const nl = lambda + dragRef.current.velocityX;
+            let np = phi - dragRef.current.velocityY;
+            np = Math.max(-90, Math.min(90, np));
+            stateRef.current.rotation = [nl, np];
 
             rafId = requestAnimationFrame(momentumLoop);
         }
@@ -142,15 +123,14 @@ export function useDragAndZoom(
         momentumLoop();
 
         return () => {
-            svgEl.removeEventListener('pointerdown', pointerDown);
+            canvasEl.removeEventListener('pointerdown', pointerDown);
             window.removeEventListener('pointermove', pointerMove);
             window.removeEventListener('pointerup', pointerUp);
-            window.removeEventListener('pointermove', checkHoveredMarker);
             window.removeEventListener('pointercancel', pointerUp);
-            svg.on('.zoom', null);
-            if ((svgEl as any).__wheelTimeout)
-                clearTimeout((svgEl as any).__wheelTimeout);
+            selection.on('.zoom', null);
+            if ((canvasEl as any).__wheelTimeout)
+                clearTimeout((canvasEl as any).__wheelTimeout);
             if (rafId) cancelAnimationFrame(rafId);
         };
-    }, [svgRef, dragRef, isDraggingRef, setTooltip, setRotation, setScale]);
+    }, [canvasRef, dragRef, isDraggingRef, setTooltip, stateRef]);
 }

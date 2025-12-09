@@ -1,8 +1,7 @@
 import React, { useMemo } from 'react';
 import IconButton from './IconButton';
-import ThemeToggle from './ThemeToggle';
 import translations from '../i18n';
-import { Globe, Logs, Settings } from 'lucide-react';
+import { Globe, Logs, Settings, Power } from 'lucide-react';
 import logo from 'assets/logo.svg';
 
 const pages = ['map', 'logging', 'settings'];
@@ -10,15 +9,26 @@ const pages = ['map', 'logging', 'settings'];
 interface SidebarProps {
     onSelect: (page: string) => void;
     darkThemeEnabled: boolean;
-    toggleDarkMode: () => void;
     active: string;
     activeLanguage?: string;
 }
 
+const handleExit = async () => {
+    try {
+        const response = await fetch('/api/logout', { method: 'POST' });
+        if (!response.ok) {
+            console.error('Logout failed:', response.statusText);
+            alert('Logout failed. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error during logout:', error);
+        alert('Logout error. Please check your connection.');
+    }
+};
+
 export default React.memo(function Sidebar({
     onSelect,
     darkThemeEnabled,
-    toggleDarkMode,
     active,
     activeLanguage = 'ENGLISH',
 }: SidebarProps) {
@@ -32,10 +42,10 @@ export default React.memo(function Sidebar({
 
     return (
         <nav
-            className={`w-15 h-screen bg-bgSidebar border-r border-[#DDD] dark:border-[#444] flex flex-col items-center justify-between p-3 select-none`}
+            className={`w-15 h-screen bg-[var(--color-bg-alt)] border-[#DDD] dark:border-[#444] flex flex-col items-center justify-between p-3 select-none`}
         >
             {/* Logo */}
-            <div className="w-full mb-3 flex items-center justify-center">
+            <div className="w-full mb-3 flex items-center justify-center text-primary">
                 <img src={logo} alt="logo" className="max-w-10 h-auto block" />
             </div>
 
@@ -52,11 +62,13 @@ export default React.memo(function Sidebar({
                     />
                 ))}
             </div>
-
-            {/* Theme toggle */}
-            <ThemeToggle
+            <IconButton
+                icon={<Power size={24} strokeWidth={2.25} />}
                 darkThemeEnabled={darkThemeEnabled}
-                toggleDarkMode={toggleDarkMode}
+                isActive={false}
+                label={t.pages.exit || 'Exit'}
+                onClick={handleExit}
+                title={t.pages.exit || 'Exit'}
             />
         </nav>
     );

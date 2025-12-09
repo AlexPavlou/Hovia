@@ -56,34 +56,47 @@ bool Capture::packetHandler(const PDU& pdu) {
     return true;
 }
 
-void Capture::startCapture() {
-    std::string interfaceOption = m_ipTracker->pSettings->getInterfaceOption();
-    // use the correct network interface depending on settings' saved option
-    std::string interface =
-        (interfaceOption == "Auto") ? getDefaultInterface() : interfaceOption;
-
+bool Capture::tryStartSniffer(const std::string& interface) {
     if (interface.empty())
-        return;
-
+        return false;
     try {
         Tins::SnifferConfiguration config;
         config.set_filter(m_ipTracker->pSettings->getFilter());
         config.set_promisc_mode(true);
         config.set_timeout(100);
         config.set_immediate_mode(true);
-
         m_pSniffer = std::make_unique<Sniffer>(interface, config);
 
         if (m_ipTracker->pSettings->hasVerbose())
             Logger::getInstance().log(LogLevel::INFO, __func__,
-                                      "Created sniffer object for the '" +
-                                          interface + "' interface");
+                                      "Created sniffer object for '" +
+                                          interface + "'");
 
         m_captureThread = std::thread(&Capture::captureLoop, this);
+        return true;
     } catch (const std::exception& e) {
         Logger::getInstance().log(LogLevel::ERROR, __func__,
-                                  "Error starting capture: " +
-                                      std::string(e.what()));
+                                  "Error starting capture on interface '" +
+                                      interface + "': " + e.what());
+        return false;
+    }
+}
+
+void Capture::startCapture() {
+    std::string interfaceOption = m_ipTracker->pSettings->getInterfaceOption();
+
+    // Try user option or default if 'Auto'
+    std::string interface =
+        (interfaceOption == "Auto") ? getDefaultInterface() : interfaceOption;
+
+    if (tryStartSniffer(interface))
+        return;
+
+    // If user option failed and wasn't 'Auto', fallback to the default
+    // interface
+    if (interfaceOption != "Auto") {
+        interface = getDefaultInterface();
+        tryStartSniffer(interface);
     }
 }
 

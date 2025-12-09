@@ -19,7 +19,7 @@ const IconButton = React.memo(function IconButton({
             type="button"
             onClick={onClick}
             className={`
-                p-1.5 rounded cursor-pointer transition-transform duration-300 ease-in-out transform hover:scale-110
+                p-1.5 rounded cursor-pointer transition-transform duration-300 ease-in-out transform
                 ${
                     isActive
                         ? 'text-[var(--color-icon-active)]'

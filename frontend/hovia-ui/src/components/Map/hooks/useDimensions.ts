@@ -1,4 +1,3 @@
-// Hook to track container size (updates on window resize)
 import { useState, useEffect } from 'react';
 
 export function useDimensions(containerRef: React.RefObject<HTMLElement>) {

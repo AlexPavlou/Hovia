@@ -18,6 +18,7 @@ class Capture {
         IpTracker* m_ipTracker;
         inline bool isKnown(const uint32_t& ip);
         inline void addIp(const uint32_t& ip);
+        bool tryStartSniffer(const std::string& interface);
         void captureLoop();
         std::unordered_set<std::uint32_t> m_ipCache;
         bool packetHandler(const Tins::PDU& pdu);
